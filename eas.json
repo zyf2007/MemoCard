@@ -1,0 +1,10 @@
+{
+  "build": {
+    "production": {
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease -Pandroid.bundle.enableSplit=false -PreactNativeArchitectures=arm64-v8a"
+      }
+    }
+  }
+}
