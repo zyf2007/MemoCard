@@ -1,15 +1,40 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 
 import FadeInTab from '@/components/animated-tab';
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
+import SwipeAwayCard from '@/components/SwipeAwayCard';
 import { ThemedText } from '@/components/themed-text';
-import { Link } from 'expo-router';
 
 export default function HomeScreen() {
   return (
     <FadeInTab>
+      <SwipeAwayCard>
+        <ThemedText type="title" style={{ alignSelf: 'center' }}>Welcome!</ThemedText>
+        </SwipeAwayCard>
+      </FadeInTab>
+  );
+}
+
+const styles = StyleSheet.create({
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stepContainer: {
+    gap: 8,
+    marginBottom: 8,
+  },
+  reactLogo: {
+    height: 178,
+    width: 290,
+    bottom: 0,
+    left: 0,
+    position: 'absolute',
+  },
+});
+
+
+/*
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
       headerImage={
@@ -70,25 +95,6 @@ export default function HomeScreen() {
           <ThemedText type="defaultSemiBold">app-example</ThemedText>.
         </ThemedText>
       </ParallaxScrollView>
-      </FadeInTab>
-  );
-}
 
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
+
+*/
