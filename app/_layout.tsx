@@ -4,7 +4,9 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
+
 enableScreens();
 
 export const unstable_settings = {
@@ -16,12 +18,15 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
-      </Stack>
+      <GestureHandlerRootView style={{ flex: 1 }} >
+        <SafeAreaProvider>
+          <SafeAreaView style={{ flex: 1}}> 
+          <Stack>
+            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+            </Stack>
+          </SafeAreaView>
+        </SafeAreaProvider>
       <StatusBar style="auto" />
 
       </GestureHandlerRootView>
@@ -29,3 +34,6 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
+
+
+

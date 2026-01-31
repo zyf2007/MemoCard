@@ -40,6 +40,8 @@ const FadeInView: React.FC<PropsWithChildren<object>> = props => {
         <Animated.View
             style={{
                 opacity: fadeAnim,
+                flex: 1,
+                width: '100%',
                 transform: [
                     { scale: scaleAnim },
                 ],

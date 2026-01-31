@@ -9,9 +9,12 @@ import { Fonts } from '@/constants/theme';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import { Button } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 export default function TabTwoScreen() {
   return (
+    <SafeAreaView style={{ flex: 1}}>
     <FadeInTab>
+      
         <ThemedText
           type="title"
           style={{
@@ -96,8 +99,10 @@ export default function TabTwoScreen() {
             </ThemedText>
           ),
         })}
-      </Collapsible>
-    </FadeInTab>
+        </Collapsible>
+        
+      </FadeInTab>
+      </SafeAreaView>
   );
 }
 
