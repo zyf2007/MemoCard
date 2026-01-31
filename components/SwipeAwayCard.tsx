@@ -9,47 +9,48 @@ import Animated, {
 } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
-
 const THRESHOLD = 120;
 interface SwipeAwayCardProps {
   children: React.ReactNode;
   onPositionChange?: (x: number, y: number) => void;
 };
+
 export default function SwipeAwayCard({ children, onPositionChange }: Readonly<SwipeAwayCardProps>) {
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
-  const verticalSwiping = useSharedValue(false);
   const onSwipeComplete = (dir: 'left' | 'right' | 'up' | 'down') => {
     console.log('Swiped direction:', dir);
   };
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
-      verticalSwiping.value = Math.abs(e.translationY) > Math.abs(e.translationX);
-
-      if (verticalSwiping.value) {
+      // 锁定滑动方向
+      let verticalSwiping = Math.abs(e.translationY) > Math.abs(e.translationX);
+      if (verticalSwiping) {
         translateX.value = 0;
         translateY.value = e.translationY;
       } else {
         translateY.value = 0;
         translateX.value = e.translationX;
       }
+
+      // 调用外部回调（扩展其他动画/逻辑）
       if (onPositionChange) {
         runOnJS(onPositionChange)(translateX.value, translateY.value);
       }
     })
     .onEnd((e) => {
-      // 获取速度（像素/秒）
+      // 获取速度
       const { velocityX, velocityY } = e;
       const absX = Math.abs(translateX.value);
       const absY = Math.abs(translateY.value);
 
-      // 计算“投影位移”：当前位置 + 速度的一定比例（例如 20% 的惯性影响）
+      // 计算“投影位移”：当前位置 + 速度的 20%
       const projectedX = absX + Math.abs(velocityX) * 0.2;
       const projectedY = absY + Math.abs(velocityY) * 0.2;
 
 
-      // 投影位移小于阈值 或 速度方向与位置方向不同时，回弹
+      // 投影位移小于阈值 或 速度方向与位移方向不同时，回弹
       if ((projectedX < THRESHOLD || translateX.value > 0 !== velocityX > 0)
         && (projectedY < THRESHOLD || translateY.value > 0 !== velocityY > 0)) {
         // 回弹逻辑
@@ -65,25 +66,22 @@ export default function SwipeAwayCard({ children, onPositionChange }: Readonly<S
         translateX.value = withTiming(direction === 'right' ? width : -width, { duration: 200 }, (finished) => {
           if (finished) runOnJS(onSwipeComplete)(direction);
           // 等待1秒
-          setTimeout(() => {
-            translateX.value = 0;
-          }, 500);
+          // setTimeout(() => {
+          //   translateX.value = 0;
+          // }, 500);
         });
       } else {
         const direction = velocityY > 0 ? 'down' : 'up';
         translateY.value = withTiming(direction === 'down' ? height : -height, { duration: 200 }, (finished) => {
           if (finished) runOnJS(onSwipeComplete)(direction);
           // 等待1秒
-          setTimeout(() => {
-            translateY.value = 0;
-          }, 500);
+          // setTimeout(() => {
+          //   translateY.value = 0;
+          // }, 500);
         });
       }
     });
-
-
-
-
+  
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
       { translateX: translateX.value },

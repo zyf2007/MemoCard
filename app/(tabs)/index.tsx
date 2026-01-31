@@ -1,8 +1,7 @@
 import { Text, View } from 'react-native';
 
 import FadeInTab from '@/components/animated-tab';
-import SwipeAwayCard from '@/components/SwipeAwayCard';
-import { ThemedText } from '@/components/themed-text';
+import PiledCard from '@/components/piledCard/piledCard';
 
 export default function HomeScreen() {
   return (
@@ -10,9 +9,9 @@ export default function HomeScreen() {
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <Text>Hello World!</Text>
 
-        <SwipeAwayCard>
-          <ThemedText type="title">Welcome!</ThemedText>
-        </SwipeAwayCard>
+        <PiledCard
+          getData={(index) => index.toString()}
+        />
       </View>
     </FadeInTab>
   );
