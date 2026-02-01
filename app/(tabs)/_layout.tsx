@@ -6,20 +6,20 @@ import { StyleSheet } from 'react-native';
 export default function TabLayout({ children }: { children: React.ReactNode }) {
   return (
     <Material3ThemeProvider>
-      <NativeTabs>
+      <NativeTabs labelVisibilityMode='selected'>
         <NativeTabs.Trigger name="index">
           <Icon src={require('../../assets/images/react-logo.png')} />
-          <Label>Home</Label>
+          <Label>记忆</Label>
         </NativeTabs.Trigger>
 
         <NativeTabs.Trigger name="explore">
           <Icon src={require('../../assets/images/react-logo.png')} />
-          <Label>Explore</Label>
+          <Label>统计</Label>
         </NativeTabs.Trigger>
 
-        <NativeTabs.Trigger name="e2">
+        <NativeTabs.Trigger name="manage">
           <Icon src={require('../../assets/images/react-logo.png')} />
-          <Label>Explore2</Label>
+          <Label>管理</Label>
         </NativeTabs.Trigger>
 
       </NativeTabs>

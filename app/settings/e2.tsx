@@ -1,4 +1,4 @@
-import FadeInTab from '@/components/animated-tab';
+
 import { useAppTheme } from '@/components/Material3ThemeProvider';
 import * as React from 'react';
 import { View, useWindowDimensions } from 'react-native';
@@ -29,9 +29,9 @@ const renderScene = SceneMap({
 });
 
   return (
-    <FadeInTab>
+    <View style={{ flex:1}}>
       <Appbar.Header>
-        <Appbar.Content title="Title" />
+        <Appbar.Content title="管理" />
       </Appbar.Header>
       <TabView
         navigationState={{ index, routes }}
@@ -50,7 +50,7 @@ const renderScene = SceneMap({
           />
         )}
       />
-    </FadeInTab>
+    </View>
   );
 }
 

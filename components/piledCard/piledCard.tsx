@@ -13,10 +13,10 @@ import Animated, {
   withSpring,
   withTiming
 } from 'react-native-reanimated';
+import { useAppTheme } from '../Material3ThemeProvider';
 
 const { width, height } = Dimensions.get('window');
 const THRESHOLD = width * 0.3;
-
 export default function PiledCard({ getData }: Readonly<{ getData: (index: number) => string }>) {
   const [currentIndex, setCurrentIndex] = useState(0);
   // 提前告诉临时覆盖的卡片下一个索引，确保数据不被setCurrentIndex更新
@@ -33,15 +33,15 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
 
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
-  const isVertical = Math.abs(e.translationY) > Math.abs(e.translationX)*2;
-  
-  if (isVertical) {
-    translateY.value = e.translationY;
-    translateX.value = e.translationX * 0.3;
-  } else {
-    translateX.value = e.translationX;
-    translateY.value = e.translationY * 0.3;
-  }
+      const isVertical = Math.abs(e.translationY) > Math.abs(e.translationX) * 2;
+
+      if (isVertical) {
+        translateY.value = e.translationY;
+        translateX.value = e.translationX * 0.3;
+      } else {
+        translateX.value = e.translationX;
+        translateY.value = e.translationY * 0.3;
+      }
     })
     .onEnd((e) => {
       const { velocityX, velocityY } = e;
@@ -112,7 +112,7 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
     const x = Math.min(translateX.value, 0);
     const y = translateX.value < 0 ? translateY.value : 0;
     return {
-      transform: [{ translateX: x },{ translateY: y }, { scale: scale }],
+      transform: [{ translateX: x }, { translateY: y }, { scale: scale }],
       opacity: opacity,
       zIndex: 2,
     };
@@ -150,6 +150,30 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
       zIndex: 4,
     };
   });
+  const theme = useAppTheme();
+  const styles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: '#e0e0e0' },
+  wrapper: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  card: {
+    position: 'absolute',
+    width: width * 0.86,
+    height: height * 0.6,
+    borderRadius: 24,
+    elevation: 4,
+    shadowColor: theme.colors.shadow,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    bottom: 120,
+    backgroundColor: theme.colors.surface,
+  }
+});
   return (
     <View style={styles.container}>
       <GestureDetector gesture={panGesture}>
@@ -181,26 +205,3 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#e0e0e0' },
-  wrapper: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  card: {
-    position: 'absolute',
-    width: width * 0.86,
-    height: height * 0.6,
-    borderRadius: 24,
-    backgroundColor: '#fff',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    bottom: 120,
-  }
-});

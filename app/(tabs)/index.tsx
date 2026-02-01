@@ -12,6 +12,7 @@ export default function HomeScreen() {
         <PiledCard
           getData={(index) => index.toString()}
         />
+        {/* <AsyncStorageTestComponent /> */}
       </View>
     </FadeInTab>
   );

@@ -1,7 +1,7 @@
 import { useFocusEffect } from 'expo-router';
 import React, { useEffect, useRef, type PropsWithChildren } from 'react';
 import { Animated, Easing, View } from 'react-native';
-import { Material3ThemeProvider } from './Material3ThemeProvider';
+import { Material3ThemeProvider, useAppTheme } from './Material3ThemeProvider';
 const FadeInView: React.FC<PropsWithChildren<object>> = props => {
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const scaleAnim = useRef(new Animated.Value(0)).current;
@@ -52,13 +52,14 @@ const FadeInView: React.FC<PropsWithChildren<object>> = props => {
 };
 
 export default function FadeInTab({ children }: any) {
-
+    const theme = useAppTheme();
     return (
         <Material3ThemeProvider><View
             style={{
                 flex: 1,
                 alignItems: 'center',
                 justifyContent: 'center',
+                backgroundColor: theme.colors.surfaceContainer,
             }}>
             <FadeInView>
                 {children}
