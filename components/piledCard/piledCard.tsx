@@ -3,14 +3,15 @@ import { Dimensions, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { Text } from 'react-native-paper';
 import Animated, {
-  Extrapolate,
   Extrapolation,
   interpolate,
   runOnJS,
+  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
+  withDelay,
   withSpring,
-  withTiming,
+  withTiming
 } from 'react-native-reanimated';
 
 const { width, height } = Dimensions.get('window');
@@ -18,25 +19,29 @@ const THRESHOLD = width * 0.3;
 
 export default function PiledCard({ getData }: Readonly<{ getData: (index: number) => string }>) {
   const [currentIndex, setCurrentIndex] = useState(0);
+  // 提前告诉临时覆盖的卡片下一个索引，确保数据不被setCurrentIndex更新
+  const [nextIndex, setNextIndex] = useState(0);
 
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
   const updateIndex = (step: number) => {
     setCurrentIndex((prev) => prev + step);
+    translateX.value = 0;
+    translateY.value = 0;
   };
 
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
-      // 1. 完全锁定轨道：只允许单一方向位移
-      const isVertical = Math.abs(e.translationY) > Math.abs(e.translationX);
-      if (isVertical) {
-        translateX.value = 0;
-        translateY.value = e.translationY;
-      } else {
-        translateY.value = 0;
-        translateX.value = e.translationX;
-      }
+  const isVertical = Math.abs(e.translationY) > Math.abs(e.translationX)*2;
+  
+  if (isVertical) {
+    translateY.value = e.translationY;
+    translateX.value = e.translationX * 0.3;
+  } else {
+    translateX.value = e.translationX;
+    translateY.value = e.translationY * 0.3;
+  }
     })
     .onEnd((e) => {
       const { velocityX, velocityY } = e;
@@ -62,28 +67,22 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
         // 水平滑动
         const isRight = velocityX > 0;
         const targetX = isRight ? width : -width;
-
+        // 在动画完成前先记录当前索引，确保临时遮挡数据不被updateIndex影响
+        runOnJS(setNextIndex)(isRight ? currentIndex - 1 : currentIndex + 1);
         translateX.value = withTiming(targetX, { duration: 200 }, (finished) => {
           if (finished) {
-            // 重要：如果是右滑(isRight)，意味着压入前一张，index 应该 -1
-            // 如果是左滑(!isRight)，意味着飞走当前张，index 应该 +1
             runOnJS(updateIndex)(isRight ? -1 : 1);
-
-            translateX.value = 0;
-            translateY.value = 0;
           }
         });
+        translateY.value = withTiming(0, { duration: 200 });
       } else {
-        // 垂直滑动 (你可以保留原来的上下甩出逻辑，或者仅做回弹)
+        // 垂直滑动
         const isDown = velocityY > 0;
         const targetY = isDown ? height : -height;
 
         translateY.value = withTiming(targetY, { duration: 200 }, (finished) => {
           if (finished) {
-            runOnJS(updateIndex)(1); // 垂直滑通常视为“下一张”
-
-            translateX.value = 0;
-            translateY.value = 0;
+            runOnJS(updateIndex)(1); // 垂直滑暂时视为“下一张”
           }
         });
       }
@@ -93,7 +92,7 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
   const nextStyle = useAnimatedStyle(() => {
     // 仅在左滑时放大
     const scale = interpolate(translateX.value, [-width, 0], [1, 0.85], Extrapolation.CLAMP);
-    const opacity = interpolate(translateX.value, [-width, 0], [1, 0], Extrapolation.CLAMP);
+    const opacity = interpolate(translateX.value, [-width, 0], [1, 0.4], Extrapolation.CLAMP);
     return {
       transform: [{ scale }],
       opacity: translateX.value < 0 ? opacity : 0,
@@ -103,22 +102,18 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
 
   // 2. 当前张 (Current) - 中间层
   const currentStyle = useAnimatedStyle(() => {
-    // 【新增】右滑时透明度变化：从 1 降到 0.7
-    const opacity = interpolate(translateX.value, [0, width], [1, 0.7], Extrapolation.CLAMP);
+    // 右滑时透明度变化：从 1 降到 0.7
+    const opacity = interpolate(translateX.value, [0, width], [1, 0.4], Extrapolation.CLAMP);
 
     // 右滑时缩小：从 1 缩到 0.85
     const scale = interpolate(translateX.value, [0, width], [1, 0.85], Extrapolation.CLAMP);
 
     // 轨道锁定逻辑：右滑时当前卡片 X 轴不动，左滑时跟随
-    const x = translateX.value < 0 ? translateX.value : 0;
-
+    const x = Math.min(translateX.value, 0);
+    const y = translateX.value < 0 ? translateY.value : 0;
     return {
-      transform: [
-        { translateX: x },
-        { translateY: translateY.value },
-        { scale: scale }
-      ],
-      opacity: opacity, // 应用透明度
+      transform: [{ translateX: x },{ translateY: y }, { scale: scale }],
+      opacity: opacity,
       zIndex: 2,
     };
   });
@@ -126,14 +121,35 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
   // 3. 前一张 (Prev) - 最顶层
   const prevStyle = useAnimatedStyle(() => {
     // 从左侧 -width 处飞入覆盖
-    const x = interpolate(translateX.value, [0, width], [-width, 0], Extrapolate.CLAMP);
+    const x = interpolate(translateX.value, [0, width], [-width, 0], Extrapolation.CLAMP);
+    const y = translateX.value > 0 ? translateY.value : 0;
     return {
-      transform: [{ translateX: x }],
+      transform: [{ translateX: x }, { translateY: y }],
       opacity: translateX.value > 0 ? 1 : 0,
       zIndex: 3,
     };
   });
+  // 4. 加载遮挡层 (Shelter) - 临时层
+  const shelterOpacity = useSharedValue(0);
+  useAnimatedReaction(
+    // 监听current
+    () => ({ trigger: Math.abs(translateX.value) > width - 5, }),
+    (current, previous) => {
+      // 当 translateX 超过阈值时，立即将 opacity 设为 1
+      if (current.trigger && !previous?.trigger) {
+        shelterOpacity.value = 1;
+        // 延迟 150ms 后再设为 0，确保当前卡片完全隐藏
+        shelterOpacity.value = withDelay(150, withTiming(0, { duration: 0 }));
+      }
+    }
+  );
 
+  const sheltStyle = useAnimatedStyle(() => {
+    return {
+      opacity: shelterOpacity.value,
+      zIndex: 4,
+    };
+  });
   return (
     <View style={styles.container}>
       <GestureDetector gesture={panGesture}>
@@ -150,8 +166,13 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
           </Animated.View>
 
           {/* 前一张 (Prev) */}
-          <Animated.View style={[styles.card, prevStyle, styles.topShadow]}>
+          <Animated.View style={[styles.card, prevStyle]}>
             <Text variant="headlineMedium">{getData(currentIndex - 1) || "Start"}</Text>
+          </Animated.View>
+
+          {/* 加载遮挡层 (Shelter) */}
+          <Animated.View style={[styles.card, sheltStyle, { elevation: 0 }]} pointerEvents={'none'}>
+            <Text variant="headlineMedium">{getData(nextIndex)}</Text>
           </Animated.View>
 
         </View>
@@ -180,9 +201,6 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  topShadow: {
-    elevation: 12,
-    shadowOpacity: 0.25,
+    bottom: 120,
   }
 });
