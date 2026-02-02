@@ -1,30 +1,30 @@
-import { Material3ThemeProvider } from '@/components/Material3ThemeProvider';
-import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { Icon, Label, NativeTabs, VectorIcon } from 'expo-router/unstable-native-tabs';
 import React from 'react';
-import { StyleSheet } from 'react-native';
-
+import { StyleSheet, View } from 'react-native';
 export default function TabLayout({ children }: { children: React.ReactNode }) {
+
   return (
-    <Material3ThemeProvider>
+    <View style={{flex:1}}>
       <NativeTabs labelVisibilityMode='selected'>
         <NativeTabs.Trigger name="index">
-          <Icon src={require('../../assets/images/react-logo.png')} />
+          <Icon src={<VectorIcon family={MaterialCommunityIcons} name="brain" />} />
           <Label>记忆</Label>
         </NativeTabs.Trigger>
 
         <NativeTabs.Trigger name="explore">
-          <Icon src={require('../../assets/images/react-logo.png')} />
+          <Icon src={<VectorIcon family={MaterialCommunityIcons} name="chart-box" />} />
           <Label>统计</Label>
         </NativeTabs.Trigger>
 
         <NativeTabs.Trigger name="manage">
-          <Icon src={require('../../assets/images/react-logo.png')} />
+          <Icon src={<VectorIcon family={MaterialCommunityIcons} name="database-edit" />} />
           <Label>管理</Label>
         </NativeTabs.Trigger>
 
       </NativeTabs>
       {children}
-    </Material3ThemeProvider>
+    </View>
 
   );
 }

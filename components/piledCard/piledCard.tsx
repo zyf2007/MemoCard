@@ -152,7 +152,6 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
   });
   const theme = useAppTheme();
   const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#e0e0e0' },
   wrapper: {
     ...StyleSheet.absoluteFillObject,
     justifyContent: 'center',
@@ -171,11 +170,11 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
     justifyContent: 'center',
     alignItems: 'center',
     bottom: 120,
-    backgroundColor: theme.colors.surface,
+    backgroundColor: theme.colors.surfaceBright,
   }
 });
   return (
-    <View style={styles.container}>
+    <View style={{ backgroundColor: theme.colors.background, flex: 1}}>
       <GestureDetector gesture={panGesture}>
         <View style={styles.wrapper}>
 
