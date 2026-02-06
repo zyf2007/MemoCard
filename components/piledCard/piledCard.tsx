@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import { Text } from 'react-native-paper';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -14,6 +13,7 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import { useAppTheme } from '../Material3ThemeProvider';
+import ChoosingCard from './choosingCard';
 
 const { width, height } = Dimensions.get('window');
 const THRESHOLD = width * 0.3;
@@ -168,7 +168,6 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
     shadowOpacity: 0.1,
     shadowRadius: 12,
     justifyContent: 'center',
-    alignItems: 'center',
     bottom: 120,
     backgroundColor: theme.colors.surfaceBright,
   }
@@ -180,22 +179,23 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
 
           {/* 下一张 (Next) */}
           <Animated.View style={[styles.card, nextStyle]}>
-            <Text variant="headlineMedium">{getData(currentIndex + 1) || "End"}</Text>
+                        <ChoosingCard question='Paper is a collection of customizable and production-ready components for React Native, following Google’s Material Design guidelines.' optionA='0' optionB='1' optionC='2' optionD='3' />
           </Animated.View>
 
           {/* 当前张 (Current) */}
           <Animated.View style={[styles.card, currentStyle]}>
-            <Text variant="headlineMedium">{getData(currentIndex)}</Text>
+            {/* <Text variant="headlineMedium">{getData(currentIndex)}</Text> */}
+            <ChoosingCard question='Paper is a collection of customizable and production-ready components for React Native, following Google’s Material Design guidelines.' optionA='0' optionB='1' optionC='2' optionD='3' />
           </Animated.View>
 
           {/* 前一张 (Prev) */}
           <Animated.View style={[styles.card, prevStyle]}>
-            <Text variant="headlineMedium">{getData(currentIndex - 1) || "Start"}</Text>
+                        <ChoosingCard question='Paper is a collection of customizable and production-ready components for React Native, following Google’s Material Design guidelines.' optionA='0' optionB='1' optionC='2' optionD='3' />
           </Animated.View>
 
           {/* 加载遮挡层 (Shelter) */}
           <Animated.View style={[styles.card, sheltStyle, { elevation: 0 }]} pointerEvents={'none'}>
-            <Text variant="headlineMedium">{getData(nextIndex)}</Text>
+                        <ChoosingCard question='Paper is a collection of customizable and production-ready components for React Native, following Google’s Material Design guidelines.' optionA='0' optionB='1' optionC='2' optionD='3' />
           </Animated.View>
 
         </View>

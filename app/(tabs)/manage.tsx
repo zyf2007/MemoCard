@@ -7,13 +7,6 @@ import { List, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 
-
-// 定义标签页路由
-const routes = [
-  { key: 'first', title: 'First' },
-  { key: 'second', title: 'Second' },
-];
-
 export default function TabViewExample() {
   const theme = useAppTheme();
 
@@ -23,42 +16,44 @@ export default function TabViewExample() {
     <FadeInTab>
       <SafeAreaView>
         <ScrollView >
-        <Text variant="displaySmall" style={{ marginTop: 100,marginLeft: 15 }}>管理</Text>
-        <Text variant="titleMedium" style={{ marginTop: 30,marginLeft: 16,marginBottom:12, color: theme.colors.primary }}>题库</Text>
-        <List.Item
-          title="添加题库"
-          description="将Json格式的题库文本导入到软件题库中"
-          left={props => <List.Icon {...props} icon="application-import" style={{transform:[{scale:0.85}],marginLeft:17}} />}
-          onPress={() => router.push("/settings/e2")}
-        />
-        <List.Item
-          title="管理题库"
-          description="查看，修改和清理导入过的题库"
-          left={props => <List.Icon {...props} icon="database-edit" />}
-          onPress={() => console.log('Pressed2')}
-        />
-        <Text variant="titleMedium" style={{ marginTop: 16,marginLeft: 16,marginBottom:12, color: theme.colors.primary }}>通用</Text>
-        <List.Item
-          title="答题设置"
-          description="管理可能出现的题型，做题方式等"
-          left={props => <List.Icon {...props} icon="checkbox-multiple-marked" style={{transform:[{scale:0.9}],marginLeft:17}}/>}
-          onPress={() => console.log('Pressed3')}
-        />
-        <List.Item
-          title="出题设置"
-          description="管理出题规则等"
-          left={props => <List.Icon {...props} icon="file-question" />}
-          onPress={() => console.log('Pressed4')}
-        />
-        <List.Item
-          title="关于应用"
-          description="本应用的版本信息等"
-          left={props => <List.Icon {...props} icon="information" />}
-          onPress={() => console.log('Pressed4')}
-          style={{ marginBottom: 120, }}
-        />
+          <Text variant="displaySmall" style={{ marginTop: 100, marginLeft: 15 }}>管理</Text>
+          <Text variant="titleMedium" style={{ marginTop: 30, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>题库</Text>
+          <List.Item
+            title="添加题库"
+            description="将Json格式的题库文本导入到软件题库中"
+            left={props => <List.Icon {...props} icon="application-import" style={{ transform: [{ scale: 0.85 }], marginLeft: 17 }} />}
+            onPress={() => router.push("/settings/e2")}
+          />
 
-</ScrollView>
+          <List.Item
+            title="管理题库"
+            description="查看，修改和清理导入过的题库"
+            left={props => <List.Icon {...props} icon="database-edit" />}
+            onPress={() => router.push("/settings/manageQuestionBases")}
+          />
+          <Text variant="titleMedium" style={{ marginTop: 16, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>通用</Text>
+          <List.Item
+            title="答题设置"
+            description="管理可能出现的题型，做题方式等"
+            left={props => <List.Icon {...props} icon="checkbox-multiple-marked" style={{ transform: [{ scale: 0.9 }], marginLeft: 17 }} />}
+            onPress={() => console.log('Pressed3')}
+          />
+          <List.Item
+            title="出题设置"
+            description="管理出题规则等"
+            left={props => <List.Icon {...props} icon="file-question" />}
+            onPress={() => console.log('Pressed4')}
+          />
+          <List.Item
+            title="关于应用"
+            description="本应用的版本信息等"
+            left={props => <List.Icon {...props} icon="information" />}
+            onPress={() => console.log('Pressed4')}
+            style={{ marginBottom: 120, }}
+          />
+
+
+        </ScrollView>
       </SafeAreaView>
     </FadeInTab>
   );

@@ -25,6 +25,7 @@ export default function RootLayout() {
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="settings/e2" options={{ headerShown: false }} />
+              <Stack.Screen name="settings/manageQuestionBases" options={{ headerShown: true,title:'管理题库' }} />
               <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
             </Stack>
           </Material3ThemeProvider>

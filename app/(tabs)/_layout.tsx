@@ -1,24 +1,24 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Icon, Label, NativeTabs, VectorIcon } from 'expo-router/unstable-native-tabs';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View } from 'react-native';
 export default function TabLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <View style={{flex:1}}>
       <NativeTabs labelVisibilityMode='selected'>
         <NativeTabs.Trigger name="index">
-          <Icon src={<VectorIcon family={MaterialCommunityIcons} name="brain" />} />
+          {Platform.OS === 'web' || <Icon src={<VectorIcon family={MaterialCommunityIcons} name="brain" />} />}
           <Label>记忆</Label>
         </NativeTabs.Trigger>
 
         <NativeTabs.Trigger name="explore">
-          <Icon src={<VectorIcon family={MaterialCommunityIcons} name="chart-box" />} />
+          {Platform.OS === 'web'|| <Icon src={<VectorIcon family={MaterialCommunityIcons} name="chart-box" />} />}
           <Label>统计</Label>
         </NativeTabs.Trigger>
 
         <NativeTabs.Trigger name="manage">
-          <Icon src={<VectorIcon family={MaterialCommunityIcons} name="database-edit" />} />
+          {Platform.OS === 'web' || <Icon src={<VectorIcon family={MaterialCommunityIcons} name="database-edit" />} />}
           <Label>管理</Label>
         </NativeTabs.Trigger>
 
