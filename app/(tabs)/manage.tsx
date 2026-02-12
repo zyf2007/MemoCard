@@ -22,7 +22,7 @@ export default function TabViewExample() {
             title="添加题库"
             description="将Json格式的题库文本导入到软件题库中"
             left={props => <List.Icon {...props} icon="application-import" style={{ transform: [{ scale: 0.85 }], marginLeft: 17 }} />}
-            onPress={() => router.push("/settings/e2")}
+            onPress={() => router.push("/settings/AddQuestionBases")}
           />
 
           <List.Item

@@ -1,5 +1,6 @@
 import { Material3ThemeProvider } from '@/components/Material3ThemeProvider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { QuestionBaseManager } from '@/scripts/questions';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -16,7 +17,7 @@ export const unstable_settings = {
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-
+  QuestionBaseManager.getInstance();
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <GestureHandlerRootView style={{ flex: 1 }} >
@@ -25,7 +26,11 @@ export default function RootLayout() {
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="settings/e2" options={{ headerShown: false }} />
-              <Stack.Screen name="settings/manageQuestionBases" options={{ headerShown: true,title:'管理题库' }} />
+              <Stack.Screen name="settings/manageQuestionBases/index" options={{ headerShown: true,title:'管理题库' }} />
+              <Stack.Screen name="settings/AddQuestionBases/BuildQuestionBase/index" options={{ headerShown: false,title:'创建题库' }} />
+              <Stack.Screen name="settings/AddQuestionBases/ImportQuestionBase/index" options={{ headerShown: true,title:'导入题库' }} />
+              <Stack.Screen name="settings/AddQuestionBases/index" options={{ headerShown: false,title:'选择添加题库的方式' }} />
+
               <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
             </Stack>
           </Material3ThemeProvider>
