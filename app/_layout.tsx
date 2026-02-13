@@ -27,7 +27,7 @@ export default function RootLayout() {
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="settings/e2" options={{ headerShown: false }} />
               <Stack.Screen name="settings/manageQuestionBases/index" options={{ headerShown: true,title:'管理题库' }} />
-              <Stack.Screen name="settings/AddQuestionBases/BuildQuestionBase/index" options={{ headerShown: false,title:'创建题库' }} />
+              <Stack.Screen name="settings/manageQuestionBases/manageQuestionBase/index" options={{ headerShown: true,title:'编辑题库' }} />
               <Stack.Screen name="settings/AddQuestionBases/ImportQuestionBase/index" options={{ headerShown: true,title:'导入题库' }} />
               <Stack.Screen name="settings/AddQuestionBases/index" options={{ headerShown: false,title:'选择添加题库的方式' }} />
 

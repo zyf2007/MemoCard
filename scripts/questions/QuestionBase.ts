@@ -1,4 +1,5 @@
 import { Alert } from "react-native";
+import { Func } from "../utils/FuncSystem";
 import { ChoiceQuestion } from "./ChoiceQuestion";
 import { FillingQuestion } from "./FillingQuestion";
 import { Question } from "./Question";
@@ -12,6 +13,7 @@ export class QuestionBase {
     private set baseName(newName: string) {
         this._baseName = newName;
     }
+    public onQuestionListUpdated: Func<() => void> = new Func();
 
     // 题目列表：外部只读，内部可写
     private _questions: Question[] = [];
@@ -67,12 +69,14 @@ export class QuestionBase {
     /** 导入多题（批量添加） */
     public async importQuestions(questions: string): Promise<boolean> {
         this._questions = this._questions.concat(this.parseJsonString(questions));
+        this.onQuestionListUpdated.invoke();
         return await this.onUpdate(); // 触发持久化
     }
 
     /** 添加单题 */
     public async addQuestion(question: Question): Promise<boolean> {
         this._questions.push(question);
+        this.onQuestionListUpdated.invoke();
         return await this.onUpdate(); // 触发持久化
     }
 
@@ -82,6 +86,7 @@ export class QuestionBase {
         this._questions = this._questions.filter(q => q.id !== questionId);
         const isRemoved = this._questions.length < initialLength;
         if (isRemoved) {
+            this.onQuestionListUpdated.invoke();
             return await this.onUpdate(); // 仅删除成功时触发持久化
         }
         return false;
@@ -93,6 +98,7 @@ export class QuestionBase {
         if (targetIndex === -1) return false;
 
         this._questions[targetIndex] = newQuestion;
+        this.onQuestionListUpdated.invoke();
         return await this.onUpdate(); // 触发持久化
     }
 

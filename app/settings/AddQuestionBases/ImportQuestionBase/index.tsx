@@ -27,7 +27,6 @@ export default function ImportQuestionBase() {
                     title="使用题库创建向导"
                     description="使用图形化界面创建题库"
                     left={props => <List.Icon {...props} icon="application-import" style={{ transform: [{ scale: 0.85 }], marginLeft: 17 }} />}
-                    onPress={() => router.push("/settings/AddQuestionBases/BuildQuestionBase")}
                 />
                 <Text variant="titleMedium" style={{ marginTop: 16, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>批量导入</Text>
                 <List.Item

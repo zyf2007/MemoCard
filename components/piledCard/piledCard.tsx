@@ -94,7 +94,7 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
     const scale = interpolate(translateX.value, [-width, 0], [1, 0.85], Extrapolation.CLAMP);
     const opacity = interpolate(translateX.value, [-width, 0], [1, 0.4], Extrapolation.CLAMP);
     return {
-      transform: [{ scale }],
+      transform: [{ scale: scale }],
       opacity: translateX.value < 0 ? opacity : 0,
       zIndex: 1,
     };

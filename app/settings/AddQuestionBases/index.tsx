@@ -15,6 +15,7 @@ export default function AddQuestionBases() {
     return (
         <Material3ThemeProvider>
             <SafeAreaView>
+
                 <View style={{ marginTop: 100, marginLeft: 5, flexDirection: 'row', alignItems: 'center' }} >
                     <IconButton
                         icon="arrow-left"
@@ -23,14 +24,33 @@ export default function AddQuestionBases() {
                     <Text variant="headlineMedium" >选择添加题库的方式</Text>
                 </View>
 
-                <Text variant="titleMedium" style={{ marginTop: 30, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>手动</Text>
+                <Text
+                    variant="titleMedium"
+                    style={{ marginTop: 30, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}
+                >
+                    手动
+                </Text>
+
                 <List.Item
                     title="使用题库创建向导"
                     description="使用图形化界面创建题库"
-                    left={props => <List.Icon {...props} icon="application-import" style={{ transform: [{ scale: 0.85 }], marginLeft: 17 }} />}
+                    left={
+                        props => <List.Icon
+                        {...props}
+                        icon="application-import"
+                        style={{ transform: [{ scale: 0.85 }], marginLeft: 17 }}
+                        />
+                    }
                     onPress={() => setVisible(true)}
                 />
-                <Text variant="titleMedium" style={{ marginTop: 16, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>批量导入</Text>
+
+                <Text
+                    variant="titleMedium"
+                    style={{ marginTop: 16, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}
+                >
+                    批量导入
+                </Text>
+
                 <List.Item
                     title="从Json导入"
                     description="将Json格式的题库文本导入到软件题库中"
@@ -38,15 +58,16 @@ export default function AddQuestionBases() {
                     onPress={() => router.push("/settings/AddQuestionBases/ImportQuestionBase")}
                 />
 
-
-
                 <Portal>
-                    <Dialog visible={visible} onDismiss={() => { setVisible(false); console.log("dismiss") }}>
+                    <Dialog
+                        visible={visible}
+                        onDismiss={() => { setVisible(false); console.log("dismiss") }}
+                        style={{ marginTop: -10 }}
+                    >
                         <Dialog.Icon icon="file-document-edit" />
                         <Dialog.Title >创建题库</Dialog.Title>
 
                         <Dialog.Content>
-                            {/* <Text variant="bodyMedium">This is simple dialog</Text> */}
                             <TextInput
                                 label="输入题库名称"
                                 onChangeText={text => createQuestionBaseName = text}

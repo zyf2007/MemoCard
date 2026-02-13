@@ -1,21 +1,22 @@
 import { Material3ThemeProvider, useAppTheme } from '@/components/Material3ThemeProvider';
+import { QuestionBaseItem } from '@/components/QuestionManage/QuestionBaseItem';
 import { QuestionBaseManager } from '@/scripts/questions';
-import { router } from 'expo-router';
 import * as React from 'react';
 import { View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import { Button, Dialog, IconButton, List, Portal, Text } from 'react-native-paper';
+import { Button, Dialog, Portal, Text } from 'react-native-paper';
+
 
 export default function ManageQuestionBases() {
     const theme = useAppTheme();
     const [visible, setVisible] = React.useState(false);
     const [QuestionBaseName, setQuestionBaseName] = React.useState("");
-    
+
     const [questionBaseList, setQuestionBaseList] = React.useState<string[]>([]);
 
     React.useEffect(() => {
         const manager = QuestionBaseManager.getInstance<QuestionBaseManager>();
-        
+
         const updateList = () => {
             console.log("QuestionBaseListUpdated");
             setQuestionBaseName("");
@@ -32,70 +33,51 @@ export default function ManageQuestionBases() {
             console.log("ManageQuestionBases: 取消订阅");
             unsubscribe();
         };
-    }, []); 
+    }, []);
 
-    // 封装删除逻辑
     const handleDeleteConfirm = () => {
         setVisible(false);
         QuestionBaseManager.getInstance().deleteQuestionBase(QuestionBaseName);
+    };
+
+    const handleItemDeletePress = (name: string) => {
+        setQuestionBaseName(name);
+        setVisible(true);
     };
 
     return (
         <Material3ThemeProvider>
             <View style={{ backgroundColor: theme.colors.surfaceContainer, flex: 1 }}>
                 <ScrollView>
-                    {Array.isArray(questionBaseList) && questionBaseList.map((name, index) => {
-                        return (
-                            <List.Item
-                                key={index} 
-                                title={name}
-                                titleStyle={theme.fonts.titleLarge}
-                                style={{ marginBottom: -10 }}
-                                left={props => (
-                                    <List.Icon 
-                                        {...props} 
-                                        icon="playlist-check" 
-                                        style={{ transform: [{ scale: 1.5 }], marginLeft: 22 }} 
-                                    />
-                                )}
-                                right={() => (
-                                    <View style={{ flexDirection: 'row', marginRight: -10 }}>
-                                        <IconButton 
-                                            icon="file-document-edit" 
-                                            mode="contained" 
-                                            onPress={() => router.push({
-                                                pathname: '/settings/manageQuestionBases/manageQuestionBase',
-                                                params: { baseName: name }
-                                            })} 
-                                        />
-                                        <IconButton 
-                                            icon="file-remove" 
-                                            mode="contained" 
-                                            onPress={() => {
-                                                setQuestionBaseName(name);
-                                                setVisible(true);
-                                            }} 
-                                        />
-                                    </View>
-                                )}
-                            />
-                        );
-                    })}
-                    
-                    {Array.isArray(questionBaseList) && questionBaseList.length === 0 && (
-                        <View style={{ padding: 20, alignItems: 'center' }}>
-                            <Text style={theme.fonts.bodyLarge}>暂无题库</Text>
-                        </View>
-                    )}
+                    {Array.isArray(questionBaseList) &&
+                        (questionBaseList.length === 0 ?
+                            (
+                                <View style={{ padding: 20, alignItems: 'center' }}>
+                                    <Text style={theme.fonts.bodyLarge}>暂无题库</Text>
+                                </View>
+                            )
+                            : questionBaseList.map((name) => (
+                                <QuestionBaseItem
+                                    key={name}
+                                    name={name}
+                                    theme={theme}
+                                    onDeletePress={() => handleItemDeletePress(name)}
+                                />
+                            ))
+                        )
+                    }
+
+
                 </ScrollView>
             </View>
             <Portal>
-                <Dialog 
-                    visible={visible} 
-                    onDismiss={() => { 
-                        setVisible(false); 
+                <Dialog
+                    visible={visible}
+                    onDismiss={() => {
+                        setVisible(false);
                         console.log("dismiss");
                     }}
+                    style={{ marginTop: -60 }}
                 >
                     <Dialog.Icon icon="file-document-edit" />
                     <Dialog.Title>即将删除题库「{QuestionBaseName}」</Dialog.Title>

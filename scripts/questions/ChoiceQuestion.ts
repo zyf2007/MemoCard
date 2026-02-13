@@ -1,18 +1,18 @@
+import uuid from 'react-native-uuid';
 import { Question } from "./Question";
-
 export class ChoiceQuestion extends Question {
     public readonly choices: string[];
     public readonly correctChoiceIndex: number;
 
-    constructor(id: string, text: string, choices: string[], correctChoiceIndex: number) {
-        super(id, text);
+    constructor( text: string, choices: string[], correctChoiceIndex: number, id?: string) {
+        super(id ?? (uuid.v1() as string), text);
 
         // 2.1 自身数据合法性校验
-        if (!Array.isArray(choices) || choices.length === 0) {
-            throw new Error("选择题选项不能为空");
+        if (!Array.isArray(choices) || choices.length !== 4) {
+            throw new Error("选择题选项必须有且仅有4个");
         }
-        if (typeof correctChoiceIndex !== "number" || correctChoiceIndex < 0 || correctChoiceIndex >= choices.length) {
-            throw new Error("选择题正确答案索引无效");
+        if (typeof correctChoiceIndex !== "number" || correctChoiceIndex < 1 || correctChoiceIndex > 4) {
+            throw new Error("选择题正确答案索引必须在1-4之间");
         }
 
         this.choices = choices;
@@ -40,10 +40,10 @@ export class ChoiceQuestion extends Question {
 
         const data = json as any;
         return new ChoiceQuestion(
-            data.id as string,
             data.text as string,
             data.choices as string[],
-            data.correctChoiceIndex as number
+            data.correctChoiceIndex as number,
+            uuid.v1() as string
         );
     }
 }
