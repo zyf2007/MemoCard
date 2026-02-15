@@ -9,40 +9,29 @@ import { Button, Dialog, Portal, Text } from 'react-native-paper';
 
 export default function ManageQuestionBases() {
     const theme = useAppTheme();
-    const [visible, setVisible] = React.useState(false);
+    const [deleteDialogVisible, setDeleteDialogVisible] = React.useState(false);
     const [QuestionBaseName, setQuestionBaseName] = React.useState("");
-
     const [questionBaseList, setQuestionBaseList] = React.useState<string[]>([]);
-
+    const questionBaseManager = QuestionBaseManager.getInstance<QuestionBaseManager>();
     React.useEffect(() => {
-        const manager = QuestionBaseManager.getInstance<QuestionBaseManager>();
-
         const updateList = () => {
             console.log("QuestionBaseListUpdated");
             setQuestionBaseName("");
-            const newList = manager.getQuestionBaseNames() || [];
+            const newList = questionBaseManager.getQuestionBaseNames() || [];
             setQuestionBaseList(Array.isArray(newList) ? newList : []);
         };
-
         updateList();
-
-        const unsubscribe = manager.onQuestionBaseListUpdated.subscribe(updateList);
-
-        // 页面卸载时取消订阅
-        return () => {
-            console.log("ManageQuestionBases: 取消订阅");
-            unsubscribe();
-        };
-    }, []);
+        return questionBaseManager.onQuestionBaseListUpdated.subscribe(updateList);
+    }, [questionBaseManager]);
 
     const handleDeleteConfirm = () => {
-        setVisible(false);
-        QuestionBaseManager.getInstance().deleteQuestionBase(QuestionBaseName);
+        setDeleteDialogVisible(false);
+        questionBaseManager.deleteQuestionBase(QuestionBaseName);
     };
 
     const handleItemDeletePress = (name: string) => {
         setQuestionBaseName(name);
-        setVisible(true);
+        setDeleteDialogVisible(true);
     };
 
     return (
@@ -72,9 +61,9 @@ export default function ManageQuestionBases() {
             </View>
             <Portal>
                 <Dialog
-                    visible={visible}
+                    visible={deleteDialogVisible}
                     onDismiss={() => {
-                        setVisible(false);
+                        setDeleteDialogVisible(false);
                         console.log("dismiss");
                     }}
                     style={{ marginTop: -60 }}
@@ -85,7 +74,7 @@ export default function ManageQuestionBases() {
                         <Text>确认删除题库「{QuestionBaseName}」吗？</Text>
                     </Dialog.Content>
                     <Dialog.Actions>
-                        <Button onPress={() => setVisible(false)}>Cancel</Button>
+                        <Button onPress={() => setDeleteDialogVisible(false)}>Cancel</Button>
                         <Button onPress={handleDeleteConfirm}>Ok</Button>
                     </Dialog.Actions>
                 </Dialog>

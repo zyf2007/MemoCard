@@ -75,6 +75,9 @@ export class QuestionBase {
 
     /** 添加单题 */
     public async addQuestion(question: Question): Promise<boolean> {
+        if (this._questions.some(q => q.id === question.id)) {
+            this.removeQuestionById(question.id);
+        }
         this._questions.push(question);
         this.onQuestionListUpdated.invoke();
         return await this.onUpdate(); // 触发持久化
@@ -92,15 +95,15 @@ export class QuestionBase {
         return false;
     }
 
-    /** 按ID替换完整题目对象 */
-    public async replaceQuestionById(newQuestion: Question): Promise<boolean> {
-        const targetIndex = this._questions.findIndex(q => q.id === newQuestion.id);
-        if (targetIndex === -1) return false;
+    // /** 按ID替换完整题目对象 */
+    // public async replaceQuestionById(newQuestion: Question): Promise<boolean> {
+    //     const targetIndex = this._questions.findIndex(q => q.id === newQuestion.id);
+    //     if (targetIndex === -1) return false;
 
-        this._questions[targetIndex] = newQuestion;
-        this.onQuestionListUpdated.invoke();
-        return await this.onUpdate(); // 触发持久化
-    }
+    //     this._questions[targetIndex] = newQuestion;
+    //     this.onQuestionListUpdated.invoke();
+    //     return await this.onUpdate(); // 触发持久化
+    // }
 
     /** 修改题库名称（内置，操作后触发持久化） */
     public async rename(newName: string): Promise<boolean> {

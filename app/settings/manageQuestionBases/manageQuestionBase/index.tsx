@@ -1,12 +1,12 @@
 import { Material3ThemeProvider, useAppTheme } from '@/components/Material3ThemeProvider';
 import { ChoiceQuestionListItem } from '@/components/QuestionManage/QuestionBaseManage/ChoiceQuestionListItem';
-import { CreateChoiceQuestionDialog } from '@/components/QuestionManage/QuestionBaseManage/CreateChoiceQuestionDialog';
+import { EditQuestionDialog } from '@/components/QuestionManage/QuestionBaseManage/CreateChoiceQuestionDialog';
 import { ChoiceQuestion, Question, QuestionBaseManager } from '@/scripts/questions';
-import { QuestionBase } from '@/scripts/questions/QuestionBase';
-import { useLocalSearchParams } from 'expo-router';
+import { useScrollToTop } from '@react-navigation/native';
+import { router, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
 import { FlatList, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, View } from 'react-native';
-import { AnimatedFAB } from 'react-native-paper';
+import { AnimatedFAB, Appbar } from 'react-native-paper';
 
 // 选择题列表项目组件（保留memo优化）
 const MemoizedChoiceQuestionItem = React.memo(ChoiceQuestionListItem);
@@ -14,91 +14,92 @@ const MemoizedChoiceQuestionItem = React.memo(ChoiceQuestionListItem);
 export default function ImportQuestionBase() {
   const theme = useAppTheme();
   const [dialogVisible, setDialogVisible] = React.useState(false);
-  const [isExtended, setIsExtended] = React.useState(true);
+  const [selectedQuestion,setSelectedQuestion] = React.useState<Question | null>(null);
+  const [fabExtended, setFabExtended] = React.useState(true);
   const params = useLocalSearchParams();
   const { baseName } = params;
   const [questions, setQuestions] = React.useState<Question[]>([]);
-  // 创建FlatList的ref（若后续需要调用滚动方法可使用）
   const flatListRef = React.useRef<FlatList<Question>>(null);
+  useScrollToTop(flatListRef);
 
-  // 获取题库实例
-  const getQuestionBase = React.useCallback(() => {
+  const questionBase = React.useMemo(() => {
+    if (!baseName) return null;
     const name = Array.isArray(baseName) ? baseName[0] : baseName;
     return QuestionBaseManager.getInstance<QuestionBaseManager>().getQuestionBaseByName(name);
   }, [baseName]);
 
-  // 刷新题目列表
+  // 刷新题目列表（依赖改为直接的questionBase）
   const refreshQuestionList = React.useCallback(() => {
-    const questionBase = getQuestionBase();
     if (questionBase) {
       setQuestions([...questionBase.questions]);
     }
-  }, [getQuestionBase]);
+  }, [questionBase]);
 
   // 初始化和订阅事件
   React.useEffect(() => {
-    const questionBase = getQuestionBase();
     refreshQuestionList();
     const unsubscribe = questionBase?.onQuestionListUpdated.subscribe(refreshQuestionList);
     return () => {
       console.log("unsubscribe");
       unsubscribe?.();
     };
-  }, [getQuestionBase, refreshQuestionList]);
+  }, [questionBase, refreshQuestionList]);
 
-  // 处理滚动时右下角按钮的折叠（适配FlatList的滚动事件）
+  // 处理滚动时右下角按钮的折叠
   const onScroll = React.useCallback((event: NativeSyntheticEvent<NativeScrollEvent>) => {
     const { nativeEvent } = event;
     const currentScrollY = nativeEvent.contentOffset.y;
     const isScrollingUp = (nativeEvent.velocity?.y ?? 0) <= 0;
     const isTop = currentScrollY <= 0;
     const isBottom = currentScrollY >= (nativeEvent.contentSize?.height ?? 0) - (nativeEvent.layoutMeasurement?.height ?? 0);
-    setIsExtended(isScrollingUp || isTop || isBottom);
+    setFabExtended(isScrollingUp || isTop || isBottom);
   }, []);
 
   // 处理创建题目
-  const handleCreateQuestion = React.useCallback((questionText: string, choices: string[], answer: string,id:string) => {
-    const questionBase = getQuestionBase();
+  const handleCreateConfirm = React.useCallback((questionText: string, choices: string[], answer: string, id: string) => {
     if (!questionBase) return;
     questionBase.addQuestion(
-      new ChoiceQuestion(questionText, choices, Number.parseInt(answer),id)
+      new ChoiceQuestion(questionText, choices, Number.parseInt(answer), id)
     );
-  }, [getQuestionBase]);
+  }, [questionBase]);
 
-  // 封装删除题目逻辑（避免重复代码）
-  const handleDeleteQuestion = React.useCallback((questionId: string) => {
+  // 封装删除题目逻辑
+  const handleDeleteConfirm = React.useCallback((questionId: string) => {
     console.log(questionId + " deleted");
-    const questionBase = getQuestionBase();
     questionBase?.removeQuestionById(questionId);
-  }, [getQuestionBase]);
+  }, [questionBase]);
 
-  // 获取当前题库实例
-  const questionBase = getQuestionBase() as QuestionBase;
+  const handleEditPress = React.useCallback((question: Question) => {
+    setSelectedQuestion(question);
+    setDialogVisible(true);
+  }, []);
 
   return (
     <Material3ThemeProvider>
+      <Appbar.Header mode="small">
+        <Appbar.BackAction onPress={()=>router.back()} />
+        <Appbar.Content title={"编辑题库 - "+baseName} />
+        {/* <Appbar.Action icon="magnify" onPress={_handleSearch} />
+        <Appbar.Action icon="dots-vertical" onPress={_handleMore} /> */}
+      </Appbar.Header>
       <View style={styles.container}>
         {/* FlatList核心列表 */}
         <FlatList
           ref={flatListRef}
           data={questions}
-          // 渲染单个列表项（简洁写法）
-          renderItem={({ item }) => (
+          renderItem={({ item: Question }) => (
             <MemoizedChoiceQuestionItem
-              question={item}
+              question={Question}
               theme={theme}
-              onDeletePress={() => handleDeleteQuestion(item.id)}
+              onEditPress={() => handleEditPress(Question)}
+              onDeletePress={() => handleDeleteConfirm(Question.id)}
             />
           )}
-          // 唯一key（必须）
           keyExtractor={(item) => item.id}
-          // 滚动监听
           onScroll={onScroll}
-          // 性能优化配置
           initialNumToRender={10}
-          maxToRenderPerBatch={1}
-          windowSize={5}
-          // 背景样式适配
+          maxToRenderPerBatch={10}
+          windowSize={3}
           contentContainerStyle={styles.flatListContent}
           style={[styles.flatList, { backgroundColor: theme.colors.surfaceContainer }]}
         />
@@ -107,8 +108,11 @@ export default function ImportQuestionBase() {
         <AnimatedFAB
           icon={'plus'}
           label={'Label      '}
-          extended={isExtended}
-          onPress={() => setDialogVisible(true)}
+          extended={fabExtended}
+          onPress={() => {
+            setSelectedQuestion(null);
+            setDialogVisible(true);
+          }}
           animateFrom={'right'}
           iconMode={"dynamic"}
           style={styles.fab}
@@ -116,10 +120,11 @@ export default function ImportQuestionBase() {
       </View>
 
       {/* 选择题创建弹窗 */}
-      <CreateChoiceQuestionDialog
+      <EditQuestionDialog
         visible={dialogVisible}
         onDismiss={() => setDialogVisible(false)}
-        onConfirm={handleCreateQuestion}
+        onConfirm={handleCreateConfirm}
+        question={selectedQuestion}
       />
     </Material3ThemeProvider>
   );

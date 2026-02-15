@@ -1,41 +1,53 @@
+import { ChoiceQuestion, Question } from '@/scripts/questions';
 import * as React from 'react';
 import { View } from 'react-native';
 import { Button, Dialog, Portal, RadioButton, TextInput } from 'react-native-paper';
 import uuid from 'react-native-uuid';
 
+interface EditQuestionDialogProps {
+    visible: boolean;
+    onDismiss: () => void;
+    onConfirm: (questionText: string, choices: string[], answer: string, id: string) => void;
+    question: Question | null;
+}
+
+
 // 选择题创建弹窗组件
-export const CreateChoiceQuestionDialog = ({ visible, onDismiss, onConfirm, }:
-    { visible: boolean; onDismiss: () => void; onConfirm: (questionText: string, choices: string[], answer: string,id:string) => void; }) => {
+export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: EditQuestionDialogProps) => {
     const [newQuestionText, setNewQuestionText] = React.useState('');
     const [newChoices, setNewChoices] = React.useState(['', '', '', '']);
     const [newAnswer, setNewAnswer] = React.useState<string>('1');
 
     // 重置表单
-    const resetForm = () => {
-        setNewQuestionText('');
-        setNewChoices(['', '', '', '']);
-        setNewAnswer('1');
-    };
+    const resetForm = React.useCallback(() => {
+        if (question) {
+            console.log(question);
+            setNewQuestionText(question.text);
+            setNewChoices((question as ChoiceQuestion).choices);
+            setNewAnswer((question as ChoiceQuestion).correctChoiceIndex.toString());
+        } else {
+            setNewQuestionText('');
+            setNewChoices(['', '', '', '']);
+            setNewAnswer('1');
+        }
+    }, [question]);
 
     // 确认创建
     const handleConfirm = () => {
         if (!newQuestionText || newChoices.some(c => !c) || !newAnswer) {
             const id = uuid.v4();
-            onConfirm(id, ["a", "b", "c", "d"], "1",id); // debug
+            onConfirm(id, ["a", "b", "c", "d"], "1", id); // debug
             // alert('请填写完整的题目信息');
             return;
         }
-        onConfirm(newQuestionText, newChoices, newAnswer,uuid.v4() as string);
+        onConfirm(newQuestionText, newChoices, newAnswer, question?.id || uuid.v4());
         resetForm();
         onDismiss();
     };
 
-    // 弹窗关闭时重置
     React.useEffect(() => {
-        if (!visible) {
-            resetForm();
-        }
-    }, [visible]);
+        resetForm();
+    }, [visible, question, resetForm]);
 
     return (
         <Portal>
@@ -52,7 +64,6 @@ export const CreateChoiceQuestionDialog = ({ visible, onDismiss, onConfirm, }:
                 <Dialog.Content>
                     <TextInput
                         label="输入题干"
-                        defaultValue="test"
                         value={newQuestionText}
                         onChangeText={setNewQuestionText}
                         mode='outlined'
