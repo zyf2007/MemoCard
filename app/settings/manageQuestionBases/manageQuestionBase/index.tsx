@@ -1,7 +1,8 @@
+// index.tsx
 import { Material3ThemeProvider, useAppTheme } from '@/components/Material3ThemeProvider';
 import { EditQuestionDialog } from '@/components/QuestionManage/QuestionBaseManage/EditChoiceQuestionDialog';
 import { QuestionListItem } from '@/components/QuestionManage/QuestionBaseManage/QuestionListItem';
-import { ChoiceQuestion, Question, QuestionBaseManager } from '@/scripts/questions';
+import { ChoiceQuestion, FillingQuestion, Question, QuestionBaseManager } from '@/scripts/questions';
 import { useScrollToTop } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
@@ -11,7 +12,7 @@ import { AnimatedFAB, Appbar, Searchbar, Text } from 'react-native-paper';
 // 1. 引入 Reanimated
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 
-// 选择题列表项目组件（保留memo优化）
+// 选择题列表项目组件（保留 memo 优化）
 const MemoizedQuestionItem = React.memo(QuestionListItem);
 
 export default function ImportQuestionBase() {
@@ -54,7 +55,7 @@ export default function ImportQuestionBase() {
     }
   }, [questionBase]);
 
-  // 初始化和订阅[题库更新→刷新列表]事件
+  // 初始化和订阅 [题库更新→刷新列表] 事件
   React.useEffect(() => {
     refreshQuestionList();
     const unsubscribe = questionBase?.onQuestionListUpdated.subscribe(refreshQuestionList);
@@ -83,6 +84,10 @@ export default function ImportQuestionBase() {
           choice.toLowerCase().includes(lowerCaseQuery)
         );
       }
+      // 搜索填空题答案
+      if (question instanceof FillingQuestion) {
+        return question.correctAnswer.toLowerCase().includes(lowerCaseQuery);
+      }
       return false;
     });
 
@@ -105,13 +110,15 @@ export default function ImportQuestionBase() {
     setFabExtended(isScrollingUp || isTop || isBottom);
   }, []);
 
-  // 处理创建题目
-  const handleCreateConfirm = React.useCallback(async (questionText: string, choices: string[], answer: string, id: string) => {
+  // 处理创建/编辑题目
+  const handleCreateConfirm = React.useCallback(async (question: Question) => {
     if (!questionBase) return;
-    await questionBase.addQuestion(
-      new ChoiceQuestion(questionText, choices, Number.parseInt(answer), id)
-    );
-  }, [questionBase]);
+
+    if (question instanceof ChoiceQuestion || question instanceof FillingQuestion) {
+
+      await questionBase.addQuestion(question);
+    }
+  }, [questionBase, selectedQuestion]);
 
   // 封装删除题目逻辑
   const handleDeleteConfirm = React.useCallback((questionId: string) => {
@@ -120,16 +127,12 @@ export default function ImportQuestionBase() {
   }, [questionBase]);
 
   const handleEditPress = React.useCallback((question: Question) => {
-    console.log('开始执行 handleEditPress，当前 selectedQuestion：', selectedQuestion?.id);
 
     setSelectedQuestion((prev) => {
-      console.log('回调内执行，prev（旧值）：', prev?.id);
       setDialogVisible(true);
-      console.log('回调内打开弹窗');
       return question;
     });
 
-    console.log('handleEditPress 执行完毕');
   }, []);
 
   // 清空搜索框
@@ -170,7 +173,7 @@ export default function ImportQuestionBase() {
       </Appbar.Header>
 
       {/* 搜索框 */}
-      <Animated.View style={[animatedSearchContainerStyle,{zIndex:-1}]}>
+      <Animated.View style={[animatedSearchContainerStyle, { zIndex: -1 }]}>
         <Searchbar
           placeholder="搜索题目内容..."
           value={searchQuery}
@@ -213,10 +216,14 @@ export default function ImportQuestionBase() {
               </Text>
             </View>
           )}
+          // 底部添加空白占位，让最后一项能滚到屏幕中间
+          ListFooterComponent={() => (
+            <View style={{ height: 100 }} />
+          )}
         />
       </View>
 
-      {/* 右下角FAB按钮 */}
+      {/* 右下角 FAB 按钮 */}
       <AnimatedFAB
         icon={'plus'}
         label={'添加题目'}
@@ -234,8 +241,8 @@ export default function ImportQuestionBase() {
       <EditQuestionDialog
         visible={dialogVisible}
         onDismiss={() => setDialogVisible(false)}
-        onConfirm={async (questionText: string, choices: string[], answer: string, id: string) => {
-          await handleCreateConfirm(questionText, choices, answer, id);
+        onConfirm={async (question: Question) => {
+          await handleCreateConfirm(question);
         }}
         question={selectedQuestion}
       />

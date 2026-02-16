@@ -79,7 +79,9 @@ public async addQuestion(question: Question): Promise<boolean> {
     
     if (existingIndex >= 0) {
         this._questions[existingIndex] = question;
+        console.log(`已更新题目 ID: ${question.id}`);
     } else {
+        console.log(`已添加新题目 ID: ${question.id}`);
         this._questions.push(question);
     }
     
