@@ -18,7 +18,7 @@ export const QuestionBaseItem: React.FC<QuestionBaseItemProps> = ({
 }) => {
   return (
     <List.Item
-      key={name}  // 改用name作为key，比index更稳定
+      key={name}
       title={name}
       titleStyle={theme.fonts.titleLarge}
       style={{ marginBottom: -10 }}

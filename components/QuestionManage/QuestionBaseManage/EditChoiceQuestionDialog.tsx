@@ -41,12 +41,13 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: 
             return;
         }
         onConfirm(newQuestionText, newChoices, newAnswer, question?.id || uuid.v4());
-        resetForm();
         onDismiss();
     };
 
     React.useEffect(() => {
-        resetForm();
+        if (visible) {
+            resetForm();
+        }
     }, [visible, question, resetForm]);
 
     return (
@@ -55,7 +56,7 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: 
                 visible={visible}
                 onDismiss={() => {
                     onDismiss();
-                    resetForm();
+                    // resetForm();
                 }}
                 style={{ marginTop: -60 }}
             >

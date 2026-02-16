@@ -74,14 +74,18 @@ export class QuestionBase {
     }
 
     /** 添加单题 */
-    public async addQuestion(question: Question): Promise<boolean> {
-        if (this._questions.some(q => q.id === question.id)) {
-            this.removeQuestionById(question.id);
-        }
+public async addQuestion(question: Question): Promise<boolean> {
+    const existingIndex = this._questions.findIndex(q => q.id === question.id);
+    
+    if (existingIndex >= 0) {
+        this._questions[existingIndex] = question;
+    } else {
         this._questions.push(question);
-        this.onQuestionListUpdated.invoke();
-        return await this.onUpdate(); // 触发持久化
     }
+    
+    this.onQuestionListUpdated.invoke();
+    return await this.onUpdate();
+}
 
     /** 按ID删除题目 */
     public async removeQuestionById(questionId: string): Promise<boolean> {

@@ -1,6 +1,6 @@
 import { Material3ThemeProvider, useAppTheme } from '@/components/Material3ThemeProvider';
-import { ChoiceQuestionListItem } from '@/components/QuestionManage/QuestionBaseManage/ChoiceQuestionListItem';
-import { EditQuestionDialog } from '@/components/QuestionManage/QuestionBaseManage/CreateChoiceQuestionDialog';
+import { EditQuestionDialog } from '@/components/QuestionManage/QuestionBaseManage/EditChoiceQuestionDialog';
+import { QuestionListItem } from '@/components/QuestionManage/QuestionBaseManage/QuestionListItem';
 import { ChoiceQuestion, Question, QuestionBaseManager } from '@/scripts/questions';
 import { useScrollToTop } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -9,7 +9,7 @@ import { FlatList, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, View } f
 import { AnimatedFAB, Appbar } from 'react-native-paper';
 
 // 选择题列表项目组件（保留memo优化）
-const MemoizedChoiceQuestionItem = React.memo(ChoiceQuestionListItem);
+const MemoizedQuestionItem = React.memo(QuestionListItem);
 
 export default function ImportQuestionBase() {
   const theme = useAppTheme();
@@ -28,7 +28,7 @@ export default function ImportQuestionBase() {
     return QuestionBaseManager.getInstance<QuestionBaseManager>().getQuestionBaseByName(name);
   }, [baseName]);
 
-  // 刷新题目列表（依赖改为直接的questionBase）
+  // 刷新题目列表
   const refreshQuestionList = React.useCallback(() => {
     if (questionBase) {
       setQuestions([...questionBase.questions]);
@@ -56,9 +56,9 @@ export default function ImportQuestionBase() {
   }, []);
 
   // 处理创建题目
-  const handleCreateConfirm = React.useCallback((questionText: string, choices: string[], answer: string, id: string) => {
+  const handleCreateConfirm = React.useCallback(async (questionText: string, choices: string[], answer: string, id: string) => {
     if (!questionBase) return;
-    questionBase.addQuestion(
+    await questionBase.addQuestion(
       new ChoiceQuestion(questionText, choices, Number.parseInt(answer), id)
     );
   }, [questionBase]);
@@ -69,10 +69,18 @@ export default function ImportQuestionBase() {
     questionBase?.removeQuestionById(questionId);
   }, [questionBase]);
 
-  const handleEditPress = React.useCallback((question: Question) => {
-    setSelectedQuestion(question);
+const handleEditPress = React.useCallback((question: Question) => {
+  console.log('开始执行 handleEditPress，当前 selectedQuestion：', selectedQuestion?.id);
+  
+  setSelectedQuestion((prev) => {
+    console.log('回调内执行，prev（旧值）：', prev?.id);
     setDialogVisible(true);
-  }, []);
+    console.log('回调内打开弹窗');
+    return question;
+  });
+  
+  console.log('handleEditPress 执行完毕');
+}, []);
 
   return (
     <Material3ThemeProvider>
@@ -88,7 +96,7 @@ export default function ImportQuestionBase() {
           ref={flatListRef}
           data={questions}
           renderItem={({ item: Question }) => (
-            <MemoizedChoiceQuestionItem
+            <MemoizedQuestionItem
               question={Question}
               theme={theme}
               onEditPress={() => handleEditPress(Question)}
@@ -97,8 +105,8 @@ export default function ImportQuestionBase() {
           )}
           keyExtractor={(item) => item.id}
           onScroll={onScroll}
-          initialNumToRender={10}
-          maxToRenderPerBatch={10}
+          initialNumToRender={3}
+          maxToRenderPerBatch={5}
           windowSize={3}
           contentContainerStyle={styles.flatListContent}
           style={[styles.flatList, { backgroundColor: theme.colors.surfaceContainer }]}
@@ -123,7 +131,9 @@ export default function ImportQuestionBase() {
       <EditQuestionDialog
         visible={dialogVisible}
         onDismiss={() => setDialogVisible(false)}
-        onConfirm={handleCreateConfirm}
+        onConfirm={async (questionText: string, choices: string[], answer: string, id: string) => {
+          await handleCreateConfirm(questionText, choices, answer, id);
+        }}
         question={selectedQuestion}
       />
     </Material3ThemeProvider>

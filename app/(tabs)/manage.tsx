@@ -1,5 +1,5 @@
-import FadeInTab from '@/components/animated-tab';
 import { useAppTheme } from '@/components/Material3ThemeProvider';
+import FadeInTab from '@/components/ui/animated-tab';
 import { router } from 'expo-router';
 import * as React from 'react';
 import { ScrollView } from 'react-native-gesture-handler';

@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 
-import FadeInTab from '@/components/animated-tab';
 import PiledCard from '@/components/piledCard/piledCard';
+import FadeInTab from '@/components/ui/animated-tab';
 
 export default function HomeScreen() {
   return (
