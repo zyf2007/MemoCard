@@ -157,12 +157,6 @@ export default function ImportQuestionBase() {
     };
   });
 
-  const demoContent = `
-  二次函数的一般形式是：
-  \\[y = ax^2 + bx + c (a ≠ 0)\\]
-  当判别式 \\[Δ = b^2 - 4ac > 0\\] 时，方程有两个不同的实数根：
-  \\[x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\\]
-  `;
 
 
   return (
@@ -211,7 +205,7 @@ export default function ImportQuestionBase() {
           onScroll={onScroll}
           initialNumToRender={3}
           maxToRenderPerBatch={5}
-          windowSize={3}
+          windowSize={5}
           contentContainerStyle={{ flexGrow: 1 }}
           // 空数据提示
           ListEmptyComponent={() => (

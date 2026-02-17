@@ -1,19 +1,21 @@
 import React, { useState } from 'react';
-import { Platform, StyleSheet, View } from 'react-native';
+import { Platform, StyleSheet, View, ViewStyle } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 
 interface LatexSvgProps {
   content: string;
   textColor?: string;
   backgroundColor?: string;
-  fontSize?: number;
+    fontSize?: number;
+    style?: ViewStyle;
 }
 
 const TextWithLatex: React.FC<LatexSvgProps> = ({
   content,
   textColor = '#000000',
   backgroundColor = '#ffffff',
-  fontSize = 16,
+    fontSize = 16,
+  style = {},
 }) => {
   // 状态：存储计算出的高度，初始给一个较小值
   const [webViewHeight, setWebViewHeight] = useState(fontSize * 2);
@@ -41,9 +43,8 @@ const TextWithLatex: React.FC<LatexSvgProps> = ({
             font-size: ${fontSize}px;
             color: ${textColor};
             background-color: ${backgroundColor};
-            padding: 0;
             margin: 0;
-            line-height: 1.6;
+            line-height: 1.2;
             overflow: hidden; /* 禁用 body 滚动，由原生容器控制 */
           }
           #content-wrapper {
@@ -87,7 +88,7 @@ const TextWithLatex: React.FC<LatexSvgProps> = ({
   `;
 
   return (
-    <View style={[styles.container, { height: webViewHeight }]}>
+    <View style={[styles.container, { height: webViewHeight }, style]}>
       <WebView
         originWhitelist={['*']}
         source={{ html: htmlTemplate }}

@@ -12,7 +12,15 @@ interface QuestionItemProps {
   onEditPress: () => void;
   onDeletePress: () => void;
 }
-
+const hasMathFormula = (text:string) => {
+  if (!text || typeof text !== 'string') return false;
+  // 正则匹配规则：
+  // 1. $...$ 行内公式
+  // 2. \(...\) 行内公式
+  // 3. \[...\] 块级公式
+  const mathRegex = /(\$[^$]+\$)|(\\\([\s\S]+?\\\))|(\\\[[\s\S]+?\\\])/;
+  return mathRegex.test(text);
+};
 export const QuestionListItem: React.FC<QuestionItemProps> =
   ({ question, theme, onEditPress, onDeletePress }) => {
 
@@ -48,6 +56,19 @@ export const QuestionListItem: React.FC<QuestionItemProps> =
               {String.fromCodePoint(65 + index)}
             </Text>
             {/* 选项本体 */}
+
+            {hasMathFormula(choice) ? (
+              // 包含公式：使用TextWithMath组件
+              <TextWithMath
+                content={choice || '无此选项'}
+                textColor={theme.colors.onSurface}
+                backgroundColor={isCorrect
+                ? theme.colors.primaryContainer
+                  : theme.colors.surfaceVariant}
+                style={{ width: '95%' }}
+              />
+            ) : (
+              // 不包含公式：使用普通Text组件
             <Text style={{
               fontSize: 14,
               flex: 1,
@@ -55,6 +76,8 @@ export const QuestionListItem: React.FC<QuestionItemProps> =
             }}>
               {choice || '无此选项'}
             </Text>
+
+            )}
           </View>
         );
       };
@@ -74,19 +97,26 @@ export const QuestionListItem: React.FC<QuestionItemProps> =
             marginBottom: 12
           }}>
             <Icon source="playlist-check" size={24} color={theme.colors.primary} />
-            {/* <Text style={{
-              ...theme.fonts.labelLarge,
-              marginLeft: 8,
-              flex: 1,
-              color: theme.colors.onSurface
-            }}>
-              {question.text}
-            </Text> */}
-            <TextWithMath
-              content={question.text}
-              textColor={theme.colors.onSurface}
-              backgroundColor={theme.colors.surfaceContainer}
-            />
+      {hasMathFormula(question.text) ? (
+        // 包含公式：使用TextWithMath组件
+        <TextWithMath
+          content={question.text}
+          textColor={theme.colors.onSurface}
+          backgroundColor={theme.colors.surfaceContainer}
+        />
+      ) : (
+        // 不包含公式：使用普通Text组件
+        <Text
+          style={{
+            ...theme.fonts.labelLarge,
+            marginLeft: 8,
+            flex: 1,
+            color: theme.colors.onSurface,
+          }}
+        >
+          {question.text}
+        </Text>
+      )}
           </View>
 
           {/* 选项 */}
