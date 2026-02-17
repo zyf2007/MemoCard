@@ -30,7 +30,7 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: 
             setQuestionType('choice');
             setCurrentQuestion(null);
         } else if (!visible) {
-            // 弹窗关闭时重置状态
+            // 弹窗关闭 - 重置状态
             setMenuVisible(false);
             setCurrentQuestion(null);
         }

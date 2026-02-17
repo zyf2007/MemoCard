@@ -1,17 +1,15 @@
 // index.tsx
 import { Material3ThemeProvider, useAppTheme } from '@/components/Material3ThemeProvider';
+import TextWithMath from '@/components/MathView';
 import { EditQuestionDialog } from '@/components/QuestionManage/QuestionBaseManage/EditChoiceQuestionDialog';
 import { QuestionListItem } from '@/components/QuestionManage/QuestionBaseManage/QuestionListItem';
 import { ChoiceQuestion, FillingQuestion, Question, QuestionBaseManager } from '@/scripts/questions';
 import { useScrollToTop } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
-import { FlatList, NativeScrollEvent, NativeSyntheticEvent, View } from 'react-native';
+import { FlatList, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, View } from 'react-native';
 import { AnimatedFAB, Appbar, Searchbar, Text } from 'react-native-paper';
-
-// 1. 引入 Reanimated
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
-
 // 选择题列表项目组件（保留 memo 优化）
 const MemoizedQuestionItem = React.memo(QuestionListItem);
 
@@ -25,7 +23,7 @@ export default function ImportQuestionBase() {
   const [fabExtended, setFabExtended] = React.useState(true);
   const params = useLocalSearchParams();
   const { baseName } = params;
-
+  
   // 原始题目列表
   const [allQuestions, setAllQuestions] = React.useState<Question[]>([]);
   // 筛选后的题目列表（用于渲染）
@@ -160,6 +158,14 @@ export default function ImportQuestionBase() {
     };
   });
 
+  const demoContent = `
+  二次函数的一般形式是：
+  \\[y = ax^2 + bx + c (a ≠ 0)\\]
+  当判别式 \\[Δ = b^2 - 4ac > 0\\] 时，方程有两个不同的实数根：
+  \\[x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}\\]
+  `;
+
+
   return (
     <Material3ThemeProvider>
       <Appbar.Header mode="small">
@@ -188,7 +194,9 @@ export default function ImportQuestionBase() {
           autoFocus={isSearchExpanded}
         />
       </Animated.View>
-
+        <TextWithMath
+          content={demoContent}
+        />
       <View style={{ flex: 1, backgroundColor: theme.colors.surfaceContainer }}>
         {/* 筛选后的列表 */}
         <FlatList
@@ -249,3 +257,19 @@ export default function ImportQuestionBase() {
     </Material3ThemeProvider>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#fff',
+  },
+  textContainer: {
+    gap: 8, // 文本和公式之间的间距
+  },
+  mathStyle: {
+    marginVertical: 4, // 公式上下间距
+    alignSelf: 'flex-start', // 公式左对齐（默认居中）
+    color: '#FFFF00',
+  },
+});

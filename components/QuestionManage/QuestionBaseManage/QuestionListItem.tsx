@@ -3,7 +3,6 @@ import { ChoiceQuestion, FillingQuestion, Question } from '@/scripts/questions';
 import React from 'react';
 import { View } from 'react-native';
 import { Divider, Icon, IconButton, MD3Theme, Text } from 'react-native-paper';
-
 // 定义组件的属性类型
 interface QuestionItemProps {
   question: Question;
@@ -14,12 +13,12 @@ interface QuestionItemProps {
 
 export const QuestionListItem: React.FC<QuestionItemProps> =
   ({ question, theme, onEditPress, onDeletePress }) => {
-    
+
     // ==================== 选择题渲染 ====================
     if (question.type === "choice") {
       const q = question as ChoiceQuestion;
 
-      // 生成选项显示的辅助函数，标记正确答案
+      // 渲染单个选项
       const renderChoiceItem = (choice: string, index: number) => {
         const isCorrect = index === q.correctChoiceIndex - 1;
         return (
@@ -81,6 +80,7 @@ export const QuestionListItem: React.FC<QuestionItemProps> =
             }}>
               {question.text}
             </Text>
+
           </View>
 
           {/* 选项 */}
