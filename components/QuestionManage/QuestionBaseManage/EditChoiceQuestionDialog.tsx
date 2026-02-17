@@ -14,113 +14,75 @@ interface EditQuestionDialogProps {
     question: Question | null;
 }
 
-// 选择题创建/编辑弹窗组件
+// 主弹窗组件
 export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: EditQuestionDialogProps) => {
     const [questionType, setQuestionType] = React.useState<QuestionType>('choice');
-    const [newQuestionText, setNewQuestionText] = React.useState('');
-    const [newChoices, setNewChoices] = React.useState(['', '', '', '']);
-    const [newAnswer, setNewAnswer] = React.useState<string>('1');
-    const [newFillingAnswer, setNewFillingAnswer] = React.useState('');
     const [menuVisible, setMenuVisible] = React.useState(false);
-    const menuVisibleRef = React.useRef(menuVisible);
-    
+    const [currentQuestion, setCurrentQuestion] = React.useState<Question | null>(null);
+
     React.useEffect(() => {
-        menuVisibleRef.current = menuVisible;
-    }, [menuVisible]);
-
-    // 重置表单
-    const resetForm = React.useCallback(() => {
-        if (question) {
-            console.log('编辑题目:', question);
-            setNewQuestionText(question.text);
-            
-            if (question instanceof ChoiceQuestion) {
-                setQuestionType('choice');
-                setNewChoices(question.choices);
-                setNewAnswer(question.correctChoiceIndex.toString());
-                setNewFillingAnswer('');
-            } else if (question instanceof FillingQuestion) {
-                setQuestionType('filling');
-                setNewChoices(['', '', '', '']);
-                setNewAnswer('1');
-                setNewFillingAnswer(question.correctAnswer);
-            }
-        } else {
-            // 新建模式
-            setNewQuestionText('');
-            setNewChoices(['', '', '', '']);
-            setNewAnswer('1');
-            setNewFillingAnswer('');
+        if (visible && question) {
+            // 编辑模式 - 给子组件提供初始题目数据
+            setQuestionType(question instanceof ChoiceQuestion ? 'choice' : 'filling');
+            setCurrentQuestion(question);
+        } else if (visible && !question) {
+            // 新建模式 - 初始化空的选择题
             setQuestionType('choice');
+            setCurrentQuestion(null);
+        } else if (!visible) {
+            // 弹窗关闭时重置状态
+            setMenuVisible(false);
+            setCurrentQuestion(null);
         }
-        // 重置菜单状态
-        setMenuVisible(false);
-        menuVisibleRef.current = false;
-    }, [question]);
+    }, [visible, question]);
 
-    // 确认创建/编辑
+    // 菜单开关方法
+    const openMenu = () => setMenuVisible(true);
+    const closeMenu = () => setMenuVisible(false);
+
+    // 统一的确认处理逻辑
     const handleConfirm = () => {
-        if (!newQuestionText.trim()) {
-            alert('请填写题目内容');
+        if (!currentQuestion) {
+            alert('请完善题目信息');
             return;
         }
 
-        const id = question?.id || (uuid.v4() as string);
+        // 为新建题目补充ID（编辑模式已有ID）
+        const finalQuestion = currentQuestion.id ? currentQuestion : (() => {
+            const id: string = uuid.v4();
+            if (currentQuestion instanceof ChoiceQuestion) {
+                return new ChoiceQuestion(
+                    currentQuestion.text,
+                    currentQuestion.choices,
+                    currentQuestion.correctChoiceIndex,
+                    id
+                );
+            } else if (currentQuestion instanceof FillingQuestion) {
+                return new FillingQuestion(
+                    id,
+                    currentQuestion.text,
+                    currentQuestion.correctAnswer
+                );
+            }
+        })();
 
-        if (questionType === 'choice') {
-            if (newChoices.some(c => !c.trim())) {
-                alert('请填写所有选项内容');
-                return;
-            }
-            if (!newAnswer) {
-                alert('请选择正确答案');
-                return;
-            }
-            const newQuestion = new ChoiceQuestion(
-                newQuestionText.trim(),
-                newChoices.map(c => c.trim()),
-                Number.parseInt(newAnswer),
-                id
-            );
-            onConfirm(newQuestion);
-        } else {
-            if (!newFillingAnswer.trim()) {
-                alert('请填写正确答案');
-                return;
-            }
-            const newQuestion = new FillingQuestion(
-                id,
-                newQuestionText.trim(),
-                newFillingAnswer.trim()
-            );
-            onConfirm(newQuestion);
-        }
-        
+        onConfirm(finalQuestion as Question);
         onDismiss();
     };
 
-    React.useEffect(() => {
-        if (visible) {
-            resetForm();
-        }
-    }, [visible, question, resetForm]);
 
-    const openMenu = () => {
-        if (!menuVisibleRef.current) {
-            setMenuVisible(true);
-        }
-    };
-    
-    const closeMenu = () => {
-        setMenuVisible(false);
-    };
+    const handleSwitchQuestionType = (questionType: QuestionType) => {
+        setQuestionType(questionType);
+        // 切换题型时重置当前题目状态
+        setCurrentQuestion(null);
+        closeMenu();
+    }
 
     return (
         <Portal>
             <Dialog
                 visible={visible}
                 onDismiss={() => {
-                    // 关闭弹窗时重置菜单状态
                     setMenuVisible(false);
                     onDismiss();
                 }}
@@ -137,8 +99,8 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: 
                                 onDismiss={closeMenu}
                                 key={`menu-${menuVisible}`}
                                 anchor={
-                                    <Button 
-                                        mode="outlined" 
+                                    <Button
+                                        mode="outlined"
                                         onPress={openMenu}
                                         icon="chevron-down"
                                         style={{ width: '100%' }}
@@ -147,80 +109,33 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: 
                                     </Button>
                                 }
                             >
-                                <Menu.Item 
-                                    onPress={() => {
-                                        setQuestionType('choice');
-                                        closeMenu();
-                                    }} 
-                                    title="选择题" 
+                                <Menu.Item
+                                    onPress={() => handleSwitchQuestionType('choice')}
+                                    title="选择题"
                                     leadingIcon="checkbox-marked"
                                 />
                                 <Divider />
-                                <Menu.Item 
-                                    onPress={() => {
-                                        setQuestionType('filling');
-                                        closeMenu();
-                                    }} 
-                                    title="填空题" 
+                                <Menu.Item
+                                    onPress={() => handleSwitchQuestionType('filling')}
+                                    title="填空题"
                                     leadingIcon="text-box"
                                 />
                             </Menu>
                         </View>
                     )}
 
-                    {/* 题目内容输入 */}
-                    <TextInput
-                        label="输入题干"
-                        value={newQuestionText}
-                        onChangeText={setNewQuestionText}
-                        mode='outlined'
-                        multiline
-                        numberOfLines={3}
-                    />
-                    
-                    <View style={{ height: 16 }}></View>
-
-                    {/* 选择题选项 */}
+                    {/* 根据题型渲染对应的编辑组件，传递状态更新方法 */}
                     {questionType === 'choice' && (
-                        <RadioButton.Group
-                            onValueChange={setNewAnswer}
-                            value={newAnswer}
-                        >
-                            <MemoizedChoiceItem
-                                label="A"
-                                value="1"
-                                choiceValue={newChoices[0]}
-                                onChanged={(text) => setNewChoices(prev => [text, prev[1], prev[2], prev[3]])}
-                            />
-                            <MemoizedChoiceItem
-                                label="B"
-                                value="2"
-                                choiceValue={newChoices[1]}
-                                onChanged={(text) => setNewChoices(prev => [prev[0], text, prev[2], prev[3]])}
-                            />
-                            <MemoizedChoiceItem
-                                label="C"
-                                value="3"
-                                choiceValue={newChoices[2]}
-                                onChanged={(text) => setNewChoices(prev => [prev[0], prev[1], text, prev[3]])}
-                            />
-                            <MemoizedChoiceItem
-                                label="D"
-                                value="4"
-                                choiceValue={newChoices[3]}
-                                onChanged={(text) => setNewChoices(prev => [prev[0], prev[1], prev[2], text])}
-                            />
-                        </RadioButton.Group>
+                        <ChoiceQuestionEditor
+                            initialQuestion={currentQuestion as ChoiceQuestion | null}
+                            onUpdateQuestion={(q) => setCurrentQuestion(q)}
+                        />
                     )}
 
-                    {/* 填空题答案 */}
                     {questionType === 'filling' && (
-                        <TextInput
-                            label="正确答案"
-                            value={newFillingAnswer}
-                            onChangeText={setNewFillingAnswer}
-                            mode='outlined'
-                            placeholder="请输入填空题的正确答案"
+                        <FillingQuestionEditor
+                            initialQuestion={currentQuestion as FillingQuestion | null}
+                            onUpdateQuestion={(q) => setCurrentQuestion(q)}
                         />
                     )}
                 </Dialog.Content>
@@ -233,9 +148,118 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: 
     );
 };
 
-// 选项文本输入 + 单选按钮
-function ChoiceItem({ label, value, choiceValue, onChanged }:
-    Readonly<{ label: string; value: string; choiceValue: string; onChanged: (value: string) => void; }>) {
+// -------------------------- 选择题编辑组件 --------------------------
+interface ChoiceQuestionEditorProps {
+    initialQuestion: ChoiceQuestion | null;
+    onUpdateQuestion: (question: ChoiceQuestion | null) => void;
+}
+
+const ChoiceQuestionEditor: React.FC<ChoiceQuestionEditorProps> = ({ initialQuestion, onUpdateQuestion }) => {
+    const [questionText, setQuestionText] = React.useState('');
+    const [choices, setChoices] = React.useState(['', '', '', '']);
+    const [selectedAnswer, setSelectedAnswer] = React.useState<string>('1');
+
+    // 初始化表单数据
+    React.useEffect(() => {
+        if (initialQuestion) {
+            // 编辑模式
+            setQuestionText(initialQuestion.text);
+            setChoices(initialQuestion.choices);
+            setSelectedAnswer(initialQuestion.correctChoiceIndex.toString());
+        } else {
+            // 新建模式
+            setQuestionText('');
+            setChoices(['', '', '', '']);
+            setSelectedAnswer('1');
+        }
+    }, [initialQuestion]);
+
+    // 修改单个选项
+    const updateChoice = (index: number, text: string) => {
+        const newChoices = choices.map((choice, i) => i === index ? text : choice);
+        setChoices(newChoices);
+        updateParentQuestion(newChoices);
+    };
+
+    // 更新题干
+    const handleQuestionTextChange = (text: string) => {
+        setQuestionText(text);
+        updateParentQuestion(choices, text);
+    };
+
+    // 更新选中的答案
+    const handleAnswerChange = (value: string) => {
+        setSelectedAnswer(value);
+        updateParentQuestion(choices, questionText, value);
+    };
+
+    // 组装选择题对象并通知父组件更新
+    const updateParentQuestion = (
+        newChoices = choices,
+        newQuestionText = questionText,
+        newAnswer = selectedAnswer
+    ) => {
+        // 验证基础数据，不完整则传递null
+        if (!newQuestionText.trim() || newChoices.some(c => !c.trim()) || !newAnswer) {
+            onUpdateQuestion(null);
+            return;
+        }
+
+        // 组装完整的选择题对象（ID暂时用初始值，最终由主组件统一处理）
+        const choiceQuestion = new ChoiceQuestion(
+            newQuestionText.trim(),
+            newChoices.map(c => c.trim()),
+            Number.parseInt(newAnswer),
+            initialQuestion?.id || '' // 编辑模式带ID，新建模式为空（主组件后续补充）
+        );
+
+        onUpdateQuestion(choiceQuestion);
+    };
+
+    // 选项标签映射
+    const optionLabels = ['A', 'B', 'C', 'D'];
+
+    return (
+        <View style={{ width: '100%' }}>
+            {/* 题干输入 */}
+            <TextInput
+                label="输入题干"
+                value={questionText}
+                onChangeText={handleQuestionTextChange}
+                mode='outlined'
+                multiline
+                numberOfLines={3}
+                style={{ marginBottom: 16 }}
+            />
+
+            {/* 选项 */}
+            <RadioButton.Group
+                onValueChange={handleAnswerChange}
+                value={selectedAnswer}
+            >
+                {optionLabels.map((label, index) => (
+                    <MemoizedChoiceItem
+                        key={`choice-item-${label}`}
+                        label={label}
+                        value={(index + 1).toString()}
+                        choiceValue={choices[index]}
+                        onChanged={(text) => updateChoice(index, text)}
+                    />
+                ))}
+            </RadioButton.Group>
+        </View>
+    );
+};
+
+// 选项文本输入 + 单选按钮组件
+interface ChoiceItemProps {
+    label: string;
+    value: string;
+    choiceValue: string;
+    onChanged: (value: string) => void;
+}
+
+function ChoiceItem({ label, value, choiceValue, onChanged }: Readonly<ChoiceItemProps>) {
     return (
         <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 8 }}>
             <TextInput
@@ -251,3 +275,82 @@ function ChoiceItem({ label, value, choiceValue, onChanged }:
 }
 
 const MemoizedChoiceItem = React.memo(ChoiceItem);
+
+// -------------------------- 填空题编辑组件 --------------------------
+interface FillingQuestionEditorProps {
+    initialQuestion: FillingQuestion | null;
+    onUpdateQuestion: (question: FillingQuestion | null) => void;
+}
+
+const FillingQuestionEditor: React.FC<FillingQuestionEditorProps> = ({ initialQuestion, onUpdateQuestion }) => {
+    const [questionText, setQuestionText] = React.useState('');
+    const [answer, setAnswer] = React.useState('');
+
+    // 初始化表单数据
+    React.useEffect(() => {
+        if (initialQuestion) {
+            // 编辑模式
+            setQuestionText(initialQuestion.text);
+            setAnswer(initialQuestion.correctAnswer);
+        } else {
+            // 新建模式
+            setQuestionText('');
+            setAnswer('');
+        }
+    }, [initialQuestion]);
+
+    // 更新题干
+    const handleQuestionTextChange = (text: string) => {
+        setQuestionText(text);
+        updateParentQuestion(text, answer);
+    };
+
+    // 更新答案
+    const handleAnswerChange = (text: string) => {
+        setAnswer(text);
+        updateParentQuestion(questionText, text);
+    };
+
+    // 组装填空题对象并通知父组件更新
+    const updateParentQuestion = (newQuestionText = questionText, newAnswer = answer) => {
+        // 验证基础数据，不完整则传递null
+        if (!newQuestionText.trim() || !newAnswer.trim()) {
+            onUpdateQuestion(null);
+            return;
+        }
+
+        // 组装完整的填空题对象（ID暂时用初始值，最终由主组件统一处理）
+        const fillingQuestion = new FillingQuestion(
+            initialQuestion?.id || '', // 编辑模式带ID，新建模式为空
+            newQuestionText.trim(),
+            newAnswer.trim()
+        );
+
+        onUpdateQuestion(fillingQuestion);
+    };
+
+    return (
+        <View style={{ width: '100%' }}>
+            {/* 题干输入 */}
+            <TextInput
+                label="输入题干"
+                value={questionText}
+                onChangeText={handleQuestionTextChange}
+                mode='outlined'
+                multiline
+                numberOfLines={3}
+                style={{ marginBottom: 16 }}
+            />
+
+            {/* 答案输入 */}
+            <TextInput
+                label="正确答案"
+                value={answer}
+                onChangeText={handleAnswerChange}
+                mode='outlined'
+                placeholder="请输入填空题的正确答案"
+            />
+        </View>
+    );
+};
+
