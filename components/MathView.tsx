@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Platform, StyleSheet, View, ViewStyle } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 
-interface LatexSvgProps {
+interface TextWithLatexProps {
   content: string;
   textColor?: string;
   backgroundColor?: string;
@@ -10,7 +10,7 @@ interface LatexSvgProps {
     style?: ViewStyle;
 }
 
-const TextWithLatex: React.FC<LatexSvgProps> = ({
+const TextWithLatex: React.FC<TextWithLatexProps> = ({
   content,
   textColor = '#000000',
   backgroundColor = '#ffffff',

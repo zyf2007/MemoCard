@@ -187,14 +187,24 @@ export const QuestionListItem: React.FC<QuestionItemProps> =
             marginBottom: 12
           }}>
             <Icon source="text-box" size={24} color={theme.colors.secondary} />
-            <Text style={{
-              ...theme.fonts.labelLarge,
-              marginLeft: 8,
-              flex: 1,
-              color: theme.colors.onSurface
-            }}>
-              {question.text}
-            </Text>
+            {hasMathFormula(question.text) ? (
+              // 包含公式：使用TextWithMath组件
+              <TextWithMath
+                content={question.text}
+                textColor={theme.colors.onSurface}
+                backgroundColor={theme.colors.surfaceContainer}
+              />
+            ) : (
+              // 不包含公式：使用普通Text组件
+              <Text style={{
+                ...theme.fonts.labelLarge,
+                marginLeft: 8,
+                flex: 1,
+                color: theme.colors.onSurface
+              }}>
+                {question.text}
+              </Text>
+            )}
           </View>
 
           {/* 答案区域 */}

@@ -6,9 +6,6 @@ export class FillingQuestion extends Question {
     constructor(id: string, text: string, correctAnswer: string) {
         super(id, text);
 
-        if (typeof correctAnswer !== "string" || correctAnswer.trim() === "") {
-            throw new Error("填空题答案不能为空");
-        }
 
         this.correctAnswer = correctAnswer.trim();
     }
