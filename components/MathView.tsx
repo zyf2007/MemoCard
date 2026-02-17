@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { WebView } from 'react-native-webview';
+import { WebView, WebViewMessageEvent } from 'react-native-webview';
 
 interface LatexSvgProps {
   content: string;
@@ -9,16 +9,26 @@ interface LatexSvgProps {
   fontSize?: number;
 }
 
-const LatexSvgRenderer: React.FC<LatexSvgProps> = ({
+const TextWithLatex: React.FC<LatexSvgProps> = ({
   content,
-  textColor = '#ffffff',
-  backgroundColor = '#000000',
+  textColor = '#000000',
+  backgroundColor = '#ffffff',
   fontSize = 16,
 }) => {
-  // 这里的路径对应你存放文件的位置：android/app/src/main/assets/mathjax/tex-svg.js
+  // 状态：存储计算出的高度，初始给一个较小值
+  const [webViewHeight, setWebViewHeight] = useState(fontSize * 2);
+
   const mathJaxPath = Platform.OS === 'android' 
     ? 'file:///android_asset/mathjax/tex-svg.js' 
-    : 'MathJax/tex-svg.js'; // iOS 需将文件夹拖入项目并选 "Create folder references"
+    : 'MathJax/tex-svg.js';
+
+  // 接收来自 WebView 的高度数据
+  const onMessage = (event: WebViewMessageEvent) => {
+    const height = Number(event.nativeEvent.data);
+    if (height) {
+      setWebViewHeight(height);
+    }
+  };
 
   const htmlTemplate = `
     <!DOCTYPE html>
@@ -27,62 +37,65 @@ const LatexSvgRenderer: React.FC<LatexSvgProps> = ({
         <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
         <style>
           body {
-            font-family: -apple-system, "Helvetica Neue", "Segoe UI", sans-serif;
+            font-family: -apple-system, sans-serif;
             font-size: ${fontSize}px;
             color: ${textColor};
             background-color: ${backgroundColor};
-            padding: 15px;
+            padding: 0;
             margin: 0;
             line-height: 1.6;
-            word-wrap: break-word;
+            overflow: hidden; /* 禁用 body 滚动，由原生容器控制 */
           }
-          /* 强制 SVG 公式颜色跟随文本颜色 */
-          mjx-container {
-            color: ${textColor} !important;
-            fill: currentColor;
+          #content-wrapper {
+            padding: 10px;
+            display: inline-block;
+            width: 100%;
+            box-sizing: border-box;
           }
-          /* 块级公式间距优化 */
-          mjx-container[display="true"] {
-            margin: 1em 0 !important;
-          }
+          mjx-container { color: ${textColor} !important; fill: currentColor; }
         </style>
         <script>
           window.MathJax = {
-            tex: {
-              inlineMath: [['$', '$'], ['\\\\(', '\\\\)']],
-              displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']],
-              processEscapes: true
-            },
-            svg: {
-              fontCache: 'global', // 提高渲染效率
-              scale: 1.0
-            },
-            options: {
-              enableMenu: false
+            tex: { inlineMath: [['$', '$'], ['\\\\(', '\\\\)']] },
+            svg: { fontCache: 'global' },
+            startup: {
+              pageReady: () => {
+                return MathJax.startup.defaultPageReady().then(() => {
+                  // 公式渲染完成后，计算实际高度并发送给 RN
+                  setTimeout(sendHeight, 100);
+                });
+              }
             }
           };
+
+          function sendHeight() {
+            const height = document.getElementById('content-wrapper').scrollHeight;
+            window.ReactNativeWebView.postMessage(height.toString());
+          }
+
+          // 窗口尺寸变化时重新计算
+          window.addEventListener('resize', sendHeight);
         </script>
         <script id="MathJax-script" src="${mathJaxPath}"></script>
       </head>
       <body>
-        ${content.replace(/\n/g, '<br/>')}
+        <div id="content-wrapper">
+          ${content.replace(/\n/g, '<br/>')}
+        </div>
       </body>
     </html>
   `;
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { height: webViewHeight }]}>
       <WebView
         originWhitelist={['*']}
         source={{ html: htmlTemplate }}
+        onMessage={onMessage}
+        scrollEnabled={false} 
         allowFileAccess={true}
-        allowUniversalAccessFromFileURLs={true}
-        // 性能与交互优化
-        scrollEnabled={false}
-        showsVerticalScrollIndicator={false}
-        style={{ backgroundColor: 'transparent' }}
         javaScriptEnabled={true}
-        domStorageEnabled={true}
+        style={{ backgroundColor: 'transparent' }}
       />
     </View>
   );
@@ -90,8 +103,9 @@ const LatexSvgRenderer: React.FC<LatexSvgProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, // 确保容器充满可用空间
+    width: '100%',
+    overflow: 'hidden',
   },
 });
 
-export default LatexSvgRenderer;
+export default TextWithLatex;

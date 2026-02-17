@@ -1,12 +1,14 @@
 // QuestionListItem.tsx
+import TextWithMath from '@/components/MathView';
 import { ChoiceQuestion, FillingQuestion, Question } from '@/scripts/questions';
+import { Material3Scheme } from '@pchmn/expo-material3-theme';
 import React from 'react';
 import { View } from 'react-native';
 import { Divider, Icon, IconButton, MD3Theme, Text } from 'react-native-paper';
 // 定义组件的属性类型
 interface QuestionItemProps {
   question: Question;
-  theme: MD3Theme;
+  theme: MD3Theme & { colors: Material3Scheme };
   onEditPress: () => void;
   onDeletePress: () => void;
 }
@@ -72,15 +74,19 @@ export const QuestionListItem: React.FC<QuestionItemProps> =
             marginBottom: 12
           }}>
             <Icon source="playlist-check" size={24} color={theme.colors.primary} />
-            <Text style={{
+            {/* <Text style={{
               ...theme.fonts.labelLarge,
               marginLeft: 8,
               flex: 1,
               color: theme.colors.onSurface
             }}>
               {question.text}
-            </Text>
-
+            </Text> */}
+            <TextWithMath
+              content={question.text}
+              textColor={theme.colors.onSurface}
+              backgroundColor={theme.colors.surfaceContainer}
+            />
           </View>
 
           {/* 选项 */}

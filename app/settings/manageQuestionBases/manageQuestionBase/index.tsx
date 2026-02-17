@@ -1,6 +1,5 @@
 // index.tsx
 import { Material3ThemeProvider, useAppTheme } from '@/components/Material3ThemeProvider';
-import TextWithMath from '@/components/MathView';
 import { EditQuestionDialog } from '@/components/QuestionManage/QuestionBaseManage/EditChoiceQuestionDialog';
 import { QuestionListItem } from '@/components/QuestionManage/QuestionBaseManage/QuestionListItem';
 import { ChoiceQuestion, FillingQuestion, Question, QuestionBaseManager } from '@/scripts/questions';
@@ -194,9 +193,7 @@ export default function ImportQuestionBase() {
           autoFocus={isSearchExpanded}
         />
       </Animated.View>
-        <TextWithMath
-          content={demoContent}
-        />
+        
       <View style={{ flex: 1, backgroundColor: theme.colors.surfaceContainer }}>
         {/* 筛选后的列表 */}
         <FlatList
