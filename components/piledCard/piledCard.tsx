@@ -2,22 +2,22 @@ import React, { useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
-    Extrapolation,
-    interpolate,
-    runOnJS,
-    useAnimatedReaction,
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withSpring,
-    withTiming
+  Extrapolation,
+  interpolate,
+  runOnJS,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withSpring,
+  withTiming
 } from 'react-native-reanimated';
 import { useAppTheme } from '../Material3ThemeProvider';
-import ChoosingCard from './choosingCard';
+import ChoosingCard, { ChoosingCardProps } from './choosingCard';
 
 const { width, height } = Dimensions.get('window');
 const THRESHOLD = width * 0.3;
-export default function PiledCard({ getData }: Readonly<{ getData: (index: number) => string }>) {
+export default function PiledCard(props: Readonly<ChoosingCardProps>) {
   const [currentIndex, setCurrentIndex] = useState(0);
   // 提前告诉临时覆盖的卡片下一个索引，确保数据不被setCurrentIndex更新
   const [nextIndex, setNextIndex] = useState(0);
@@ -95,7 +95,8 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
     const opacity = interpolate(translateX.value, [-width, 0], [1, 0.4], Extrapolation.CLAMP);
     return {
       transform: [{ scale: scale }],
-      opacity: translateX.value < 0 ? opacity : 0,
+      //opacity: translateX.value < 0 ? opacity : 0,
+      opacity: 1,
       zIndex: 1,
     };
   });
@@ -179,23 +180,23 @@ export default function PiledCard({ getData }: Readonly<{ getData: (index: numbe
 
           {/* 下一张 (Next) */}
           <Animated.View style={[styles.card, nextStyle]}>
-                        <ChoosingCard question='Paper is a collection of customizable and production-ready components for React Native, following Google’s Material Design guidelines.' optionA='0' optionB='1' optionC='2' optionD='3' />
+                        <ChoosingCard {...props} />
           </Animated.View>
 
           {/* 当前张 (Current) */}
           <Animated.View style={[styles.card, currentStyle]}>
             {/* <Text variant="headlineMedium">{getData(currentIndex)}</Text> */}
-            <ChoosingCard question='Paper is a collection of customizable and production-ready components for React Native, following Google’s Material Design guidelines.' optionA='0' optionB='1' optionC='2' optionD='3' />
+            <ChoosingCard {...props} />
           </Animated.View>
 
           {/* 前一张 (Prev) */}
           <Animated.View style={[styles.card, prevStyle]}>
-                        <ChoosingCard question='Paper is a collection of customizable and production-ready components for React Native, following Google’s Material Design guidelines.' optionA='0' optionB='1' optionC='2' optionD='3' />
+                        <ChoosingCard {...props} />
           </Animated.View>
 
           {/* 加载遮挡层 (Shelter) */}
           <Animated.View style={[styles.card, sheltStyle, { elevation: 0 }]} pointerEvents={'none'}>
-                        <ChoosingCard question='Paper is a collection of customizable and production-ready components for React Native, following Google’s Material Design guidelines.' optionA='0' optionB='1' optionC='2' optionD='3' />
+                        <ChoosingCard {...props} />
           </Animated.View>
 
         </View>

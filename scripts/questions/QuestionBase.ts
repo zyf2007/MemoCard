@@ -74,20 +74,20 @@ export class QuestionBase {
     }
 
     /** 添加单题 */
-public async addQuestion(question: Question): Promise<boolean> {
-    const existingIndex = this._questions.findIndex(q => q.id === question.id);
-    
-    if (existingIndex >= 0) {
-        this._questions[existingIndex] = question;
-        console.log(`已更新题目 ID: ${question.id}`);
-    } else {
-        console.log(`已添加新题目 ID: ${question.id}`);
-        this._questions.push(question);
+    public async addQuestion(question: Question): Promise<boolean> {
+        const existingIndex = this._questions.findIndex(q => q.id === question.id);
+
+        if (existingIndex >= 0) {
+            this._questions[existingIndex] = question;
+            console.log(`已更新题目 ID: ${question.id}`);
+        } else {
+            console.log(`已添加新题目 ID: ${question.id}`);
+            this._questions.push(question);
+        }
+
+        this.onQuestionListUpdated.invoke();
+        return await this.onUpdate();
     }
-    
-    this.onQuestionListUpdated.invoke();
-    return await this.onUpdate();
-}
 
     /** 按ID删除题目 */
     public async removeQuestionById(questionId: string): Promise<boolean> {
@@ -100,16 +100,6 @@ public async addQuestion(question: Question): Promise<boolean> {
         }
         return false;
     }
-
-    // /** 按ID替换完整题目对象 */
-    // public async replaceQuestionById(newQuestion: Question): Promise<boolean> {
-    //     const targetIndex = this._questions.findIndex(q => q.id === newQuestion.id);
-    //     if (targetIndex === -1) return false;
-
-    //     this._questions[targetIndex] = newQuestion;
-    //     this.onQuestionListUpdated.invoke();
-    //     return await this.onUpdate(); // 触发持久化
-    // }
 
     /** 修改题库名称（内置，操作后触发持久化） */
     public async rename(newName: string): Promise<boolean> {

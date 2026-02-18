@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { IconButton, List } from 'react-native-paper';
 
 // 定义组件的属性类型
-interface QuestionBaseItemProps {
+export interface QuestionBaseItemProps {
   name: string;          // 题库名称
   theme: any;            // 主题对象
   onDeletePress: () => void; // 删除按钮点击回调

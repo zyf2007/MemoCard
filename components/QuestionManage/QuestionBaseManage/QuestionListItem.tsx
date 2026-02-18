@@ -1,6 +1,7 @@
 // QuestionListItem.tsx
 import TextWithMath from '@/components/MathView';
 import { ChoiceQuestion, FillingQuestion, Question } from '@/scripts/questions';
+import { hasMathFormula } from '@/scripts/utils/utils';
 import { Material3Scheme } from '@pchmn/expo-material3-theme';
 import React from 'react';
 import { View } from 'react-native';
@@ -12,15 +13,7 @@ interface QuestionItemProps {
   onEditPress: () => void;
   onDeletePress: () => void;
 }
-const hasMathFormula = (text:string) => {
-  if (!text || typeof text !== 'string') return false;
-  // 正则匹配规则：
-  // 1. $...$ 行内公式
-  // 2. \(...\) 行内公式
-  // 3. \[...\] 块级公式
-  const mathRegex = /(\$[^$]+\$)|(\\\([\s\S]+?\\\))|(\\\[[\s\S]+?\\\])/;
-  return mathRegex.test(text);
-};
+
 export const QuestionListItem: React.FC<QuestionItemProps> =
   ({ question, theme, onEditPress, onDeletePress }) => {
 

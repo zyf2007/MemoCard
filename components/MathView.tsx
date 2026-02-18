@@ -6,16 +6,19 @@ interface TextWithLatexProps {
   content: string;
   textColor?: string;
   backgroundColor?: string;
-    fontSize?: number;
-    style?: ViewStyle;
+  fontSize?: number;
+  style?: ViewStyle;
+  // 新增居中属性，默认false
+  centered?: boolean;
 }
 
 const TextWithLatex: React.FC<TextWithLatexProps> = ({
   content,
   textColor = '#000000',
   backgroundColor = '#ffffff',
-    fontSize = 16,
+  fontSize = 16,
   style = {},
+  centered = false, // 设置默认值为false
 }) => {
   // 状态：存储计算出的高度，初始给一个较小值
   const [webViewHeight, setWebViewHeight] = useState(fontSize * 2);
@@ -32,6 +35,9 @@ const TextWithLatex: React.FC<TextWithLatexProps> = ({
     }
   };
 
+  // 根据centered属性动态生成居中样式
+  const textAlignStyle = centered ? 'text-align: center;' : '';
+
   const htmlTemplate = `
     <!DOCTYPE html>
     <html>
@@ -46,14 +52,20 @@ const TextWithLatex: React.FC<TextWithLatexProps> = ({
             margin: 0;
             line-height: 1.2;
             overflow: hidden; /* 禁用 body 滚动，由原生容器控制 */
+            ${textAlignStyle} /* 应用文本对齐样式 */
           }
           #content-wrapper {
             padding: 10px;
             display: inline-block;
             width: 100%;
             box-sizing: border-box;
+            ${textAlignStyle} /* 确保容器也应用居中样式 */
           }
-          mjx-container { color: ${textColor} !important; fill: currentColor; }
+          mjx-container { 
+            color: ${textColor} !important; 
+            fill: currentColor;
+            ${centered ? 'margin: 0 auto;' : ''} /* 确保LaTeX公式也居中 */
+          }
         </style>
         <script>
           window.MathJax = {

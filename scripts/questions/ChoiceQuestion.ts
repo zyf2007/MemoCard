@@ -7,7 +7,6 @@ export class ChoiceQuestion extends Question {
     constructor( text: string, choices: string[], correctChoiceIndex: number, id?: string) {
         super(id ?? (uuid.v1() as string), text);
 
-        // 2.1 自身数据合法性校验
         if (!Array.isArray(choices) || choices.length !== 4) {
             throw new Error("选择题选项必须有且仅有4个");
         }

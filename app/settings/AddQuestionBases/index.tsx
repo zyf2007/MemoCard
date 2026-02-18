@@ -9,8 +9,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AddQuestionBases() {
     const theme = useAppTheme();
-    const [visible, setVisible] = React.useState(false);
-    let createQuestionBaseName = "";
+    const [CreateBaseVisible, setCreateBaseVisible] = React.useState(false);
+    const [importBaseVisible, setImportBaseVisible] = React.useState(false);
+    const [dialogText, setDialogText] = React.useState("");
 
     return (
         <Material3ThemeProvider>
@@ -41,7 +42,7 @@ export default function AddQuestionBases() {
                         style={{ transform: [{ scale: 0.85 }], marginLeft: 17 }}
                         />
                     }
-                    onPress={() => setVisible(true)}
+                    onPress={() => setCreateBaseVisible(true)}
                 />
 
                 <Text
@@ -55,13 +56,13 @@ export default function AddQuestionBases() {
                     title="从Json导入"
                     description="将Json格式的题库文本导入到软件题库中"
                     left={props => <List.Icon {...props} icon="database-edit" />}
-                    onPress={() => router.push("/settings/AddQuestionBases/ImportQuestionBase")}
+                    onPress={() => setImportBaseVisible(true)}
                 />
 
                 <Portal>
                     <Dialog
-                        visible={visible}
-                        onDismiss={() => { setVisible(false); console.log("dismiss") }}
+                        visible={CreateBaseVisible}
+                        onDismiss={() => { setCreateBaseVisible(false); console.log("dismiss") }}
                         style={{ marginTop: -10 }}
                     >
                         <Dialog.Icon icon="file-document-edit" />
@@ -70,12 +71,31 @@ export default function AddQuestionBases() {
                         <Dialog.Content>
                             <TextInput
                                 label="输入题库名称"
-                                onChangeText={text => createQuestionBaseName = text}
+                                onChangeText={text => setDialogText(text)}
                             />
                         </Dialog.Content>
                         <Dialog.Actions>
-                            <Button onPress={() => setVisible(false)}>Cancel</Button>
-                            <Button onPress={() => { setVisible(false); createQuestionBase(createQuestionBaseName) }}>Ok</Button>
+                            <Button onPress={() => setCreateBaseVisible(false)}>Cancel</Button>
+                            <Button onPress={() => { setCreateBaseVisible(false); createQuestionBase(dialogText) }}>Ok</Button>
+                        </Dialog.Actions>
+                    </Dialog>
+                    <Dialog
+                        visible={importBaseVisible}
+                        onDismiss={() => { setImportBaseVisible(false);  setDialogText("") }}
+                        style={{ marginTop: -10 }}
+                    >
+                        <Dialog.Icon icon="file-document-edit" />
+                        <Dialog.Title >导入题库</Dialog.Title>
+
+                        <Dialog.Content>
+                            <TextInput
+                                label="输入 Json 文本"
+                                onChangeText={text => setDialogText(text)}
+                            />
+                        </Dialog.Content>
+                        <Dialog.Actions>
+                            <Button onPress={() => { setImportBaseVisible(false); setDialogText("") } }>Cancel</Button>
+                            <Button onPress={() => { setImportBaseVisible(false); importQuestionBase(dialogText) }}>Ok</Button>
                         </Dialog.Actions>
                     </Dialog>
 
@@ -93,4 +113,7 @@ function createQuestionBase(name: string) {
         pathname: "/settings/manageQuestionBases/manageQuestionBase",
         params: { baseName: name },
     });
+}
+function importQuestionBase(jsonText: string) {
+    QuestionBaseManager.getInstance().importQuestionBaseFromJson(jsonText);
 }

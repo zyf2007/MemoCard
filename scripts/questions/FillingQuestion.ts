@@ -21,7 +21,6 @@ export class FillingQuestion extends Question {
         };
     }
 
-    // 3.2 静态解析方法
     public static fromJSON(json: unknown): FillingQuestion {
         if (typeof json !== "object" || json === null || !("id" in json) || !("text" in json) || !("correctAnswer" in json)) {
             throw new Error(`无效的填空题数据：${JSON.stringify(json)}`);

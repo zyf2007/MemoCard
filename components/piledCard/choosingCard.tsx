@@ -1,75 +1,223 @@
+import TextWithMath from '@/components/MathView';
+import { ChoiceQuestion } from "@/scripts/questions/ChoiceQuestion";
+import { hasMathFormula } from "@/scripts/utils/utils";
+import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { useAppTheme } from '../Material3ThemeProvider';
 
-interface ChoosingCardProps {
-  question: string;
-  optionA: string;
-  optionB: string;
-  optionC: string;
-  optionD: string;
+// 定义组件Props类型：接收完整的ChoiceQuestion对象 + 答题结果回调
+export interface ChoosingCardProps {
+  question: ChoiceQuestion;
+  // 回调函数：参数为答题结果（是否正确、题目ID、用户选择的选项索引）
+  onAnswerSubmit?: (isCorrect: boolean, questionId: string, selectedIndex: number) => void;
 };
 
 export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
   const theme = useAppTheme();
-  const styleSheet = StyleSheet.create(
-    {
-      option: { flex: 1, margin: 4, justifyContent: 'center',borderRadius:14 },
-      optionContent: { fontSize: 20 }
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // 用户选择的选项索引
+  const [showResult, setShowResult] = useState<boolean>(false); // 是否显示答题结果
+
+  // 选项点击事件：记录选择并显示结果
+  const handleOptionPress = (index: number) => {
+    setSelectedIndex(index);
+    setShowResult(true);
+    // 触发回调函数（如果传入）
+    if (props.onAnswerSubmit) {
+      const isCorrect = index === props.question.correctChoiceIndex;
+      props.onAnswerSubmit(isCorrect, props.question.id, index);
     }
-  )
+  };
+
+  // ========== 核心重构：独立的颜色计算函数 ==========
+  // 单独计算选项背景色（无类型嵌套，直接返回颜色值）
+  const getOptionBgColor = (index: number): string => {
+    if (!showResult) {
+      // 未显示结果时：使用按钮默认背景色（react-native-paper的contained按钮默认色）
+      return theme.colors.primary;
+    }
+    
+    // 正确选项
+    if (index === props.question.correctChoiceIndex) {
+      return theme.dark ? '#228B22' : '#90EE90';
+    }
+    
+    // 用户选错的选项
+    if (index === selectedIndex && index !== props.question.correctChoiceIndex) {
+      return theme.dark ? '#B22222' : '#FF6347';
+    }
+    
+    // 其他选项（未选中/非正确）
+    return theme.colors.primary;
+  };
+
+  // ========== 改造按钮样式函数：基于颜色函数生成 ==========
+  const getOptionButtonStyle = (index: number) => {
+    const bgColor = getOptionBgColor(index);
+    return [
+      styleSheet.option,
+      { backgroundColor: bgColor } // 直接拼接背景色，无类型嵌套
+    ];
+  };
+
+  // ========== 改造选项渲染函数：传入索引，使用颜色函数 ==========
+  // 渲染单个选项内容（兼容公式）
+  const renderOptionContent = (text: string, optionIndex: number) => {
+    // 直接调用颜色函数获取背景色
+    const bgColor = getOptionBgColor(optionIndex);
+    
+    if (hasMathFormula(text)) {
+      return (
+        <TextWithMath
+          content={text}
+          textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
+          backgroundColor={bgColor} // 传入和按钮一致的背景色
+          centered={true}
+          style={{width: '100%'}}
+        />
+      );
+    }
+    return (
+      <Text
+        style={{
+          ...theme.fonts.labelLarge,
+          marginLeft: 8,
+          flex: 1,
+          color: theme.colors.onSurface,
+        }}
+      >
+        {text}
+      </Text>
+    );
+  };
+
+  // 判断是否需要单列显示（任意选项文本长度超过5个字符）
+  const isSingleColumn = props.question.choices.some(choice => choice.length > 5);
+
+  const styleSheet = StyleSheet.create({
+    option: { 
+      flex: 1, 
+      margin: 4, 
+      justifyContent: 'center',
+      borderRadius: 14,
+    },
+    optionContent: { fontSize: 20 },
+    resultText: {
+      marginTop: 16,
+      textAlign: 'center',
+      fontSize: 18,
+      fontWeight: 'bold'
+    },
+    optionRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      marginVertical: 4
+    },
+    optionColumn: {
+      flexDirection: 'column',
+      gap: 8 // 单列时按钮间距
+    }
+  });
+
+  // 选项列表（A/B/C/D对应索引1/2/3/4）
+  const options = [
+    { label: 'A', index: 1, text: props.question.choices[0] },
+    { label: 'B', index: 2, text: props.question.choices[1] },
+    { label: 'C', index: 3, text: props.question.choices[2] },
+    { label: 'D', index: 4, text: props.question.choices[3] },
+  ];
 
   return (
     <View style={{ flex: 1 }}>
-      <View style={{ margin: 20, marginBottom: 0, justifyContent: "space-between", flexDirection: "row" }} >
+      {/* 题型标题 */}
+      <View style={{ margin: 20, marginBottom: 0, flexDirection: "row", justifyContent: "space-between" }} >
         <Text variant='titleMedium' style={{ color: theme.colors.primary }} >单选题</Text>
       </View>
       
-      <View style={{flex:1, margin: 20, justifyContent: "space-between"}} >
-        <Text variant="labelLarge"  >{props.question}</Text>
-
+      {/* 题目文本 */}
+      <View style={{  margin: 20, justifyContent: "space-between" }} >
+        {hasMathFormula(props.question.text) ? (
+          // 包含公式：使用TextWithMath组件
+          <TextWithMath
+            content={props.question.text}
+            textColor={theme.colors.onSurface}
+            backgroundColor={theme.colors.surfaceBright}
+          />
+        ) : (
+          // 不包含公式：使用普通Text组件
+          <Text
+            style={{
+              ...theme.fonts.labelLarge,
+              marginLeft: 8,
+              flex: 1,
+              color: theme.colors.onSurface,
+            }}
+          >
+            {props.question.text}
+          </Text>
+        )}
       </View>
-      <View style={{  margin: 16, justifyContent: "space-between", flexDirection: "column" }} >
-        <View style={{  justifyContent: "space-between", flexDirection: "row" }} >
-          <Button
-            mode="contained"
-            style={[styleSheet.option]}
-            labelStyle={{ fontSize: 23 }}
-            onPress={() => console.log("1")}
-          >
-            {props.optionA}
-          </Button>
-          <Button
-            mode="contained"
-            style={[styleSheet.option]}
-            labelStyle={{ fontSize: 23 }}
-            onPress={() => console.log("1")}
-          >
-            {props.optionB}
-          </Button>
 
-
-        </View>
-        <View style={{  justifyContent: "space-between", flexDirection: "row" }} >
-          <Button
-            mode="contained"
-            style={[styleSheet.option]}
-            labelStyle={{ fontSize: 23}}
-            onPress={() => console.log("1")}
-            aria-label='aaa'
-          >
-            {props.optionC}
-          </Button>
-          <Button
-            mode="contained"
-            style={[styleSheet.option]}
-            labelStyle={{ fontSize: 23 }}
-            onPress={() => console.log("1")}
-          >
-            {props.optionD}
-          </Button>
-        </View>
+      {/* 选项按钮 - 程序化生成 + 自适应布局 */}
+      <View style={{ margin: 16 }}>
+        {isSingleColumn ? (
+          // 单列显示：一行一个按钮
+          <View style={styleSheet.optionColumn}>
+            {options.map(option => (
+              <Button
+                key={`option-${option.index}`}
+                mode="contained"
+                style={[getOptionButtonStyle(option.index), {maxHeight: 50}]}
+                labelStyle={{ fontSize: 23 }}
+                onPress={() => handleOptionPress(option.index)}
+                disabled={showResult}
+                aria-label={`option${option.label}`}
+              >
+                {/* 传入option.index给渲染函数 */}
+                {renderOptionContent(option.text, option.index)}
+              </Button>
+            ))}
+          </View>
+        ) : (
+          // 双列显示：2行2列
+          <>
+            {[0, 1].map(rowIndex => (
+              <View key={`row-${rowIndex}`} style={styleSheet.optionRow}>
+                {[0, 1].map(colIndex => {
+                  const optionIdx = rowIndex * 2 + colIndex;
+                  const option = options[optionIdx];
+                  return (
+                    <Button
+                      key={`option-${option.index}`}
+                      mode="contained"
+                      style={getOptionButtonStyle(option.index)}
+                      labelStyle={{ fontSize: 23 }}
+                      onPress={() => handleOptionPress(option.index)}
+                      disabled={showResult}
+                      aria-label={`option${option.label}`}
+                    >
+                      {/* 传入option.index给渲染函数 */}
+                      {renderOptionContent(option.text, option.index)}
+                    </Button>
+                  );
+                })}
+              </View>
+            ))}
+          </>
+        )}
       </View>
+
+      {/* 答题结果显示 */}
+      {showResult && (
+        <Text 
+          style={[
+            styleSheet.resultText, 
+            { color: selectedIndex === props.question.correctChoiceIndex ? theme.dark?'#90EE90':'#228B22' : theme.dark?'#FF6347':'#B22222' }
+          ]}
+        >
+          {selectedIndex === props.question.correctChoiceIndex ? '回答正确！' : '回答错误！'}
+        </Text>
+      )}
     </View>
-  )
+  );
 }
