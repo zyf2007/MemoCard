@@ -1,7 +1,7 @@
 // index.tsx
-import { Material3ThemeProvider, useAppTheme } from '@/components/Material3ThemeProvider';
 import { EditQuestionDialog } from '@/components/QuestionManage/QuestionBaseManage/EditChoiceQuestionDialog';
-import { QuestionListItem } from '@/components/QuestionManage/QuestionBaseManage/QuestionListItem';
+import { QuestionListItem } from '@/components/QuestionManage/QuestionList/QuestionListItem';
+import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvider';
 import { ChoiceQuestion, FillingQuestion, Question, QuestionBaseManager } from '@/scripts/questions';
 import { useScrollToTop } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';

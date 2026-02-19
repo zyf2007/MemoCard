@@ -1,6 +1,6 @@
 
-import TextWithLatex from '@/components/MathView';
-import FadeInTab from '@/components/ui/animated-tab';
+import FadeInTab from '@/components/ui/FadeInTab';
+import TextWithLatex from '@/components/ui/TextWithLatex';
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 export default function TabTwoScreen() {

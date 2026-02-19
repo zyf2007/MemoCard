@@ -12,7 +12,7 @@ import Animated, {
   withSpring,
   withTiming
 } from 'react-native-reanimated';
-import { useAppTheme } from '../Material3ThemeProvider';
+import { useAppTheme } from '../../hooks/Material3ThemeProvider';
 import ChoosingCard, { ChoosingCardProps } from './choosingCard';
 
 const { width, height } = Dimensions.get('window');
@@ -95,8 +95,7 @@ export default function PiledCard(props: Readonly<ChoosingCardProps>) {
     const opacity = interpolate(translateX.value, [-width, 0], [1, 0.4], Extrapolation.CLAMP);
     return {
       transform: [{ scale: scale }],
-      //opacity: translateX.value < 0 ? opacity : 0,
-      opacity: 1,
+      opacity: translateX.value < 0 ? opacity : 0,
       zIndex: 1,
     };
   });

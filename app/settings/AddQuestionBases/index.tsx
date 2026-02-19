@@ -1,4 +1,4 @@
-import { Material3ThemeProvider, useAppTheme } from '@/components/Material3ThemeProvider';
+import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvider';
 import { QuestionBaseManager } from '@/scripts/questions';
 import { router } from 'expo-router';
 import * as React from 'react';

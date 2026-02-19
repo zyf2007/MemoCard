@@ -1,15 +1,13 @@
-import TextWithMath from '@/components/MathView';
+import TextWithMath from '@/components/ui/TextWithLatex';
 import { ChoiceQuestion } from "@/scripts/questions/ChoiceQuestion";
 import { hasMathFormula } from "@/scripts/utils/utils";
 import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
-import { useAppTheme } from '../Material3ThemeProvider';
+import { useAppTheme } from '../../hooks/Material3ThemeProvider';
 
-// 定义组件Props类型：接收完整的ChoiceQuestion对象 + 答题结果回调
 export interface ChoosingCardProps {
   question: ChoiceQuestion;
-  // 回调函数：参数为答题结果（是否正确、题目ID、用户选择的选项索引）
   onAnswerSubmit?: (isCorrect: boolean, questionId: string, selectedIndex: number) => void;
 };
 
@@ -29,11 +27,9 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
     }
   };
 
-  // ========== 核心重构：独立的颜色计算函数 ==========
-  // 单独计算选项背景色（无类型嵌套，直接返回颜色值）
+
   const getOptionBgColor = (index: number): string => {
     if (!showResult) {
-      // 未显示结果时：使用按钮默认背景色（react-native-paper的contained按钮默认色）
       return theme.colors.primary;
     }
     
@@ -65,7 +61,7 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
   const renderOptionContent = (text: string, optionIndex: number) => {
     // 直接调用颜色函数获取背景色
     const bgColor = getOptionBgColor(optionIndex);
-    
+    console.log('rendered option', text);
     if (hasMathFormula(text)) {
       return (
         <TextWithMath
@@ -141,7 +137,7 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
           <TextWithMath
             content={props.question.text}
             textColor={theme.colors.onSurface}
-            backgroundColor={theme.colors.surfaceBright}
+            backgroundColor={'transparent'}
           />
         ) : (
           // 不包含公式：使用普通Text组件

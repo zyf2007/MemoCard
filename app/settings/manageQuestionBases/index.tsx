@@ -1,5 +1,5 @@
-import { Material3ThemeProvider, useAppTheme } from '@/components/Material3ThemeProvider';
 import { QuestionBaseItem } from '@/components/QuestionManage/QuestionBaseManage/QuestionBaseListItem';
+import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvider';
 import { QuestionBaseManager } from '@/scripts/questions';
 import * as React from 'react';
 import { View } from 'react-native';

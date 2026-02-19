@@ -1,4 +1,4 @@
-import { Material3ThemeProvider } from '@/components/Material3ThemeProvider';
+import { Material3ThemeProvider } from '@/hooks/Material3ThemeProvider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { QuestionBaseManager } from '@/scripts/questions';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
