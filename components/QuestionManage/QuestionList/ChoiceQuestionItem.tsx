@@ -52,7 +52,7 @@ export const ChoiceQuestionItem: React.FC<ChoiceQuestionItemProps> = ({
             content={choice || '无此选项'}
             textColor={theme.colors.onSurface}
             backgroundColor={"transparent"}
-          style={{ width: '95%' }}
+          containerStyle={{ width: '95%' }}
           centered={true}
         />
       </View>
@@ -78,7 +78,7 @@ export const ChoiceQuestionItem: React.FC<ChoiceQuestionItemProps> = ({
         content={question.text}
         textColor={theme.colors.onSurface}
         backgroundColor={"transparent"}
-        style={{ paddingHorizontal: 16 }}
+        containerStyle={{ paddingHorizontal: 16 }}
         centered={false}
         />
         

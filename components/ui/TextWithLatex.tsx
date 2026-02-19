@@ -7,9 +7,8 @@ export interface TextWithLatexProps {
   textColor?: string;
   backgroundColor?: string;
   fontSize?: number;
-  style?: ViewStyle;
+  containerStyle?: ViewStyle;
   centered?: boolean;
-  // 新增：渲染完成的回调函数
   onRenderComplete?: () => void;
 }
 
@@ -18,7 +17,7 @@ const TextWithLatex: React.FC<TextWithLatexProps> = ({
   textColor = '#000000',
   backgroundColor = 'transparent',
   fontSize = 16,
-  style = {},
+  containerStyle: style = {},
   centered = false,
   onRenderComplete, // 解构出回调函数
 }) => {

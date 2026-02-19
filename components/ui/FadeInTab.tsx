@@ -1,70 +1,81 @@
 import { useFocusEffect } from 'expo-router';
-import React, { useEffect, useRef, type PropsWithChildren } from 'react';
-import { Animated, Easing, View } from 'react-native';
+import React, { useCallback, type PropsWithChildren } from 'react';
+import { View } from 'react-native';
+import Animated, {
+    Easing,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming
+} from 'react-native-reanimated';
 import { Material3ThemeProvider, useAppTheme } from '../../hooks/Material3ThemeProvider';
+
 const FadeInView: React.FC<PropsWithChildren<object>> = props => {
-    const fadeAnim = useRef(new Animated.Value(0)).current;
-    const scaleAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useSharedValue(0);
+  const scaleAnim = useSharedValue(0.8);
 
+  const playFadeIn = useCallback(() => {
+    fadeAnim.value = 0;
+    scaleAnim.value = 0.8;
+    
+    fadeAnim.value = withTiming(1, {
+      duration: 200,
+      easing: Easing.linear,
+    });
+    
+    scaleAnim.value = withTiming(1, {
+      duration: 330,
+      easing: Easing.out(Easing.exp),
+    });
+  }, [fadeAnim, scaleAnim]);
 
-    const playFadeIn = () => {
-        fadeAnim.setValue(0);
-        scaleAnim.setValue(0.8);
-        Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-        }).start();
-        Animated.timing(scaleAnim, {
-            toValue: 1,
-            duration: 330,
-            useNativeDriver: true,
-            easing: Easing.out(Easing.exp),
-        }).start();
-    }
+  const animatedStyle = useAnimatedStyle(() => {
+    return {
+      opacity: fadeAnim.value,
+      transform: [{ scale: scaleAnim.value }],
+    };
+  });
 
-    useFocusEffect(
-        React.useCallback(() => {
-            console.log(`Tab Activated`);
-            playFadeIn();
-            return () => {
-                console.log(`Tab Deactivated`);
-            };
-        }, [])
-    );
-    useEffect(() => {
-        playFadeIn();
-    }, [fadeAnim]);
+  useFocusEffect(
+    React.useCallback(() => {
+      // console.log(`Tab Activated`);
+      playFadeIn();
+      return () => {
+        // console.log(`Tab Deactivated`);
+      };
+    }, [playFadeIn])
+  );
 
-    return (
-        <Animated.View
-            style={{
-                opacity: fadeAnim,
-                flex: 1,
-                width: '100%',
-                transform: [
-                    { scale: scaleAnim },
-                ],
-            }}>
-            {props.children}
-        </Animated.View>
-    );
+  React.useEffect(() => {
+    playFadeIn();
+  }, [playFadeIn]);
+
+  return (
+    <Animated.View
+      style={[
+        {
+          flex: 1,
+          width: '100%',
+        },
+        animatedStyle,
+      ]}>
+      {props.children}
+    </Animated.View>
+  );
 };
 
-export default function FadeInTab({ children }: any) {
-    const theme = useAppTheme();
-    return (
-        <Material3ThemeProvider><View
-            style={{
-                flex: 1,
-                alignItems: 'center',
-                justifyContent: 'center',
-                backgroundColor: theme.colors.surfaceContainer,
-            }}>
-            <FadeInView>
-                {children}
-            </FadeInView>
-        </View></Material3ThemeProvider>
-
-    );
-};
+export default function FadeInTab({ children }: Readonly<{ children: React.ReactNode }>) {
+  const theme = useAppTheme();
+  return (
+    <Material3ThemeProvider>
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.colors.surfaceContainer,
+        }}>
+        <FadeInView>{children}</FadeInView>
+      </View>
+    </Material3ThemeProvider>
+  );
+}

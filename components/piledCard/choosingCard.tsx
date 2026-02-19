@@ -70,7 +70,7 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
           textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
           backgroundColor={'transparent'}
           centered={true}
-          style={{width: '100%'}}
+          containerStyle={{width: '100%'}}
         />
       );
   };

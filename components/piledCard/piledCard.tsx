@@ -16,7 +16,7 @@ import ChoosingCard from './choosingCard';
 
 const { width, height } = Dimensions.get('window');
 const THRESHOLD = width * 0.3;
-const SWIPE_OUT_DURATION = 250;
+const SWIPE_OUT_DURATION = 200;
 
 interface PiledCardProps {
   getQuestion: (index: number) => Question | null;
@@ -26,17 +26,17 @@ interface PiledCardProps {
 /**
  * 单个卡片组件：根据相对索引计算动画
  */
-function IndividualCard({ 
-  index, 
-  currentIndex, 
-  translateX, 
-  translateY, 
-  question, 
+function IndividualCard({
+  index,
+  currentIndexSv,
+  translateX,
+  translateY,
+  question,
   onAnswerSubmit,
-  theme 
-}: any){
+  theme
+}: any) {
   const style = useAnimatedStyle(() => {
-    const relIndex = index - currentIndex;
+    const relIndex = index - currentIndexSv.value;
     // 当前卡片
     if (relIndex === 0) {
       return {
@@ -56,8 +56,8 @@ function IndividualCard({
         transform: [
           { scale: interpolate(translateX.value, [-width, 0], [1, 0.85], Extrapolation.CLAMP) }
         ],
-        opacity: translateX.value < 0 
-          ? interpolate(translateX.value, [-width, 0], [1, 0.4], Extrapolation.CLAMP) 
+        opacity: translateX.value < 0
+          ? interpolate(translateX.value, [-width, 0], [1, 0.4], Extrapolation.CLAMP)
           : 0,
       };
     }
@@ -98,20 +98,22 @@ function IndividualCard({
       <ChoosingCard question={question} onAnswerSubmit={onAnswerSubmit} />
     </Animated.View>
   );
-  
+
 }
 
 export default function PiledCard(props: Readonly<PiledCardProps>) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const theme = useAppTheme();
 
+  const theme = useAppTheme();
+  const currentIndexSv = useSharedValue(0);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
   const updateIndex = useCallback((step: number) => {
-    setCurrentIndex((prev) => prev + step);
+    currentIndexSv.value = currentIndexSv.value + step;
     translateX.value = 0;
     translateY.value = 0;
+    setCurrentIndex((prev) => prev + step);
   }, []);
 
   const panGesture = Gesture.Pan()
@@ -129,16 +131,19 @@ export default function PiledCard(props: Readonly<PiledCardProps>) {
     .onEnd((e) => {
       const { velocityX, translationX } = e;
       const projectedX = translationX + velocityX * 0.2;
-
-      if (projectedX < -THRESHOLD && projectedX>0===velocityX>0) {
+      // ←
+      if (projectedX < -THRESHOLD && projectedX > 0 === velocityX > 0) {
         translateX.value = withTiming(-width, { duration: SWIPE_OUT_DURATION }, (finished) => {
           if (finished) runOnJS(updateIndex)(1);
         });
-      } else if (projectedX > THRESHOLD&& projectedX>0===velocityX>0) {
+      }
+      // →
+      else if (projectedX > THRESHOLD && projectedX > 0 === velocityX > 0) {
         if (currentIndex > 0) {
           translateX.value = withTiming(width, { duration: SWIPE_OUT_DURATION }, (finished) => {
             if (finished) runOnJS(updateIndex)(-1);
           });
+          translateY.value = withTiming(0, { duration: SWIPE_OUT_DURATION });
         } else {
           translateX.value = withSpring(0);
         }
@@ -158,12 +163,12 @@ export default function PiledCard(props: Readonly<PiledCardProps>) {
             {questionIndex.map((qIndex) => {
               const q = props.getQuestion(qIndex);
               if (!q) return null;
-              console.log('renderIndices', qIndex," ",q.id);
+              console.log('renderIndices', qIndex, " ", q.id);
               return (
                 <IndividualCard
                   key={q.id}
                   index={qIndex}
-                  currentIndex={currentIndex}
+                  currentIndexSv={currentIndexSv}
                   translateX={translateX}
                   translateY={translateY}
                   question={q as ChoiceQuestion}

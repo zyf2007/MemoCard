@@ -33,7 +33,7 @@ export const FillingQuestionItem: React.FC<FillingQuestionItemProps> = ({
           content={question.text}
           textColor={theme.colors.onSurface}
           backgroundColor={"transparent"}
-          style={{ paddingHorizontal: 16 }}
+          containerStyle={{ paddingHorizontal: 16 }}
         />
       </View>
 
