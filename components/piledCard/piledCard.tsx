@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import { ChoiceQuestion, Question } from '@/scripts/questions';
+import React, { memo, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -13,11 +14,17 @@ import Animated, {
   withTiming
 } from 'react-native-reanimated';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
-import ChoosingCard, { ChoosingCardProps } from './choosingCard';
+import ChoosingCard from './choosingCard';
 
 const { width, height } = Dimensions.get('window');
 const THRESHOLD = width * 0.3;
-export default function PiledCard(props: Readonly<ChoosingCardProps>) {
+
+interface PiledCardProps {
+  getQuestion: (index: number) => Question;
+  onAnswerSubmit?: (isCorrect: boolean, questionId: string, selectedIndex: number) => void;
+}
+
+export default function PiledCard(props: Readonly<PiledCardProps>) {
   const [currentIndex, setCurrentIndex] = useState(0);
   // 提前告诉临时覆盖的卡片下一个索引，确保数据不被setCurrentIndex更新
   const [nextIndex, setNextIndex] = useState(0);
@@ -27,8 +34,13 @@ export default function PiledCard(props: Readonly<ChoosingCardProps>) {
 
   const updateIndex = (step: number) => {
     setCurrentIndex((prev) => prev + step);
-    translateX.value = 0;
-    translateY.value = 0;
+    console.log('nextIndex', nextIndex)
+    setTimeout(() => {
+      translateX.value = 0;
+      translateY.value = 0;
+    }, 700);
+
+    
   };
 
   const panGesture = Gesture.Pan()
@@ -42,6 +54,8 @@ export default function PiledCard(props: Readonly<ChoosingCardProps>) {
         translateX.value = e.translationX;
         translateY.value = e.translationY * 0.3;
       }
+      // 在动画完成前先记录当前索引，确保临时遮挡数据不被updateIndex影响
+      runOnJS(setNextIndex)(e.velocityX > 0 ? currentIndex - 1 : currentIndex + 1);
     })
     .onEnd((e) => {
       const { velocityX, velocityY } = e;
@@ -67,8 +81,7 @@ export default function PiledCard(props: Readonly<ChoosingCardProps>) {
         // 水平滑动
         const isRight = velocityX > 0;
         const targetX = isRight ? width : -width;
-        // 在动画完成前先记录当前索引，确保临时遮挡数据不被updateIndex影响
-        runOnJS(setNextIndex)(isRight ? currentIndex - 1 : currentIndex + 1);
+        
         translateX.value = withTiming(targetX, { duration: 200 }, (finished) => {
           if (finished) {
             runOnJS(updateIndex)(isRight ? -1 : 1);
@@ -139,7 +152,7 @@ export default function PiledCard(props: Readonly<ChoosingCardProps>) {
       if (current.trigger && !previous?.trigger) {
         shelterOpacity.value = 1;
         // 延迟 150ms 后再设为 0，确保当前卡片完全隐藏
-        shelterOpacity.value = withDelay(150, withTiming(0, { duration: 0 }));
+        shelterOpacity.value = withDelay(1000, withTiming(0, { duration: 0 }));
       }
     }
   );
@@ -152,50 +165,53 @@ export default function PiledCard(props: Readonly<ChoosingCardProps>) {
   });
   const theme = useAppTheme();
   const styles = StyleSheet.create({
-  wrapper: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  card: {
-    position: 'absolute',
-    width: width * 0.86,
-    height: height * 0.6,
-    borderRadius: 24,
-    elevation: 4,
-    shadowColor: theme.colors.shadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    justifyContent: 'center',
-    bottom: 120,
-    backgroundColor: theme.colors.surfaceBright,
-  }
-});
+    wrapper: {
+      ...StyleSheet.absoluteFillObject,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    card: {
+      position: 'absolute',
+      width: width * 0.86,
+      height: height * 0.6,
+      borderRadius: 24,
+      elevation: 4,
+      shadowColor: theme.colors.shadow,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.1,
+      shadowRadius: 12,
+      justifyContent: 'center',
+      bottom: 120,
+      backgroundColor: theme.colors.surfaceBright,
+    }
+  });
   return (
-    <View style={{ backgroundColor: theme.colors.background, flex: 1}}>
+    <View style={{ backgroundColor: theme.colors.background, flex: 1 }}>
       <GestureDetector gesture={panGesture}>
         <View style={styles.wrapper}>
 
           {/* 下一张 (Next) */}
           <Animated.View style={[styles.card, nextStyle]}>
-                        <ChoosingCard {...props} />
+            <MemoizedChoosingCard question={props.getQuestion(currentIndex + 1) as ChoiceQuestion} onAnswerSubmit={props.onAnswerSubmit} />
           </Animated.View>
 
           {/* 当前张 (Current) */}
           <Animated.View style={[styles.card, currentStyle]}>
             {/* <Text variant="headlineMedium">{getData(currentIndex)}</Text> */}
-            <ChoosingCard {...props} />
+            <MemoizedChoosingCard question={props.getQuestion(currentIndex) as ChoiceQuestion} onAnswerSubmit={props.onAnswerSubmit} />
+
           </Animated.View>
 
           {/* 前一张 (Prev) */}
           <Animated.View style={[styles.card, prevStyle]}>
-                        <ChoosingCard {...props} />
+            <MemoizedChoosingCard question={props.getQuestion(currentIndex - 1) as ChoiceQuestion} onAnswerSubmit={props.onAnswerSubmit} />
+
           </Animated.View>
 
           {/* 加载遮挡层 (Shelter) */}
           <Animated.View style={[styles.card, sheltStyle, { elevation: 0 }]} pointerEvents={'none'}>
-                        <ChoosingCard {...props} />
+            <MemoizedChoosingCard question={props.getQuestion(nextIndex) as ChoiceQuestion} onAnswerSubmit={props.onAnswerSubmit} />
+
           </Animated.View>
 
         </View>
@@ -203,4 +219,5 @@ export default function PiledCard(props: Readonly<ChoosingCardProps>) {
     </View>
   );
 }
+const MemoizedChoosingCard = memo(ChoosingCard);
 

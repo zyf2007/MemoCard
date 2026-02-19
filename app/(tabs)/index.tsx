@@ -2,7 +2,7 @@ import { Text, View } from 'react-native';
 
 import PiledCard from '@/components/piledCard/piledCard';
 import FadeInTab from '@/components/ui/FadeInTab';
-import { ChoiceQuestion, QuestionBaseManager } from '@/scripts/questions';
+import { Question, QuestionBaseManager } from '@/scripts/questions';
 import { useState } from 'react';
 
 export default function HomeScreen() {
@@ -18,7 +18,7 @@ export default function HomeScreen() {
         <Text>Hello World!</Text>
         {visible && (
           <PiledCard
-            question={QuestionBaseManager.getInstance().getQuestionBaseByName('物理公式专项练习')?.questions[2] as ChoiceQuestion}
+            getQuestion={(i)=>QuestionBaseManager.getInstance().getQuestionBaseByName('选择题2')?.questions[Math.abs(i)%2] as Question}
           />
         )}  
         {/* <AsyncStorageTestComponent /> */}

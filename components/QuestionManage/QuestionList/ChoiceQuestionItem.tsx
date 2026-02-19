@@ -1,6 +1,5 @@
-import TextWithMath from '@/components/ui/TextWithLatex';
+import { AutoMathText } from '@/components/ui/AutoMathText';
 import { ChoiceQuestion, Question } from '@/scripts/questions';
-import { hasMathFormula } from '@/scripts/utils/utils';
 import { Material3Scheme } from '@pchmn/expo-material3-theme';
 import React from 'react';
 import { View } from 'react-native';
@@ -49,24 +48,13 @@ export const ChoiceQuestionItem: React.FC<ChoiceQuestionItemProps> = ({
           {String.fromCodePoint(65 + index)}
         </Text>
         {/* 选项本体 */}
-        {hasMathFormula(choice) ? (
-          // 包含公式：使用TextWithMath组件
-          <TextWithMath
+        <AutoMathText
             content={choice || '无此选项'}
             textColor={theme.colors.onSurface}
             backgroundColor={"transparent"}
-            style={{ width: '95%' }}
-          />
-        ) : (
-          // 不包含公式：使用普通Text组件
-          <Text style={{
-            fontSize: 14,
-            flex: 1,
-            color: isCorrect ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant
-          }}>
-            {choice || '无此选项'}
-          </Text>
-        )}
+          style={{ width: '95%' }}
+          centered={true}
+        />
       </View>
     );
   };
@@ -86,27 +74,14 @@ export const ChoiceQuestionItem: React.FC<ChoiceQuestionItemProps> = ({
         marginBottom: 12
       }}>
         <Icon source="playlist-check" size={24} color={theme.colors.primary} />
-        {hasMathFormula(question.text) ? (
-          // 包含公式：使用TextWithMath组件
-          <TextWithMath
-            content={question.text}
-            textColor={theme.colors.onSurface}
-            backgroundColor={"transparent"}
-            style={{ paddingHorizontal: 16 }}
-          />
-        ) : (
-          // 不包含公式：使用普通Text组件
-          <Text
-            style={{
-              ...theme.fonts.labelLarge,
-              marginLeft: 8,
-              flex: 1,
-              color: theme.colors.onSurface,
-            }}
-          >
-            {question.text}
-          </Text>
-        )}
+        <AutoMathText
+        content={question.text}
+        textColor={theme.colors.onSurface}
+        backgroundColor={"transparent"}
+        style={{ paddingHorizontal: 16 }}
+        centered={true}
+        />
+        
       </View>
 
       {/* 选项 */}

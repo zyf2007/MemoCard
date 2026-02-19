@@ -1,10 +1,9 @@
-import TextWithMath from '@/components/ui/TextWithLatex';
 import { ChoiceQuestion } from "@/scripts/questions/ChoiceQuestion";
-import { hasMathFormula } from "@/scripts/utils/utils";
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
+import { AutoMathText } from '../ui/AutoMathText';
 
 export interface ChoosingCardProps {
   question: ChoiceQuestion;
@@ -15,6 +14,13 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
   const theme = useAppTheme();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // 用户选择的选项索引
   const [showResult, setShowResult] = useState<boolean>(false); // 是否显示答题结果
+
+  const Reset = () => {
+    setSelectedIndex(null);
+    setShowResult(false);
+  }
+
+  useEffect(()=>Reset(), [props.question]);
 
   // 选项点击事件：记录选择并显示结果
   const handleOptionPress = (index: number) => {
@@ -47,7 +53,6 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
     return theme.colors.primary;
   };
 
-  // ========== 改造按钮样式函数：基于颜色函数生成 ==========
   const getOptionButtonStyle = (index: number) => {
     const bgColor = getOptionBgColor(index);
     return [
@@ -56,35 +61,17 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
     ];
   };
 
-  // ========== 改造选项渲染函数：传入索引，使用颜色函数 ==========
-  // 渲染单个选项内容（兼容公式）
+
   const renderOptionContent = (text: string, optionIndex: number) => {
-    // 直接调用颜色函数获取背景色
-    const bgColor = getOptionBgColor(optionIndex);
-    console.log('rendered option', text);
-    if (hasMathFormula(text)) {
-      return (
-        <TextWithMath
+    return (
+        <AutoMathText
           content={text}
           textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
-          backgroundColor={bgColor} // 传入和按钮一致的背景色
+          backgroundColor={'transparent'}
           centered={true}
           style={{width: '100%'}}
         />
       );
-    }
-    return (
-      <Text
-        style={{
-          ...theme.fonts.labelLarge,
-          marginLeft: 8,
-          flex: 1,
-          color: theme.colors.onSurface,
-        }}
-      >
-        {text}
-      </Text>
-    );
   };
 
   // 判断是否需要单列显示（任意选项文本长度超过5个字符）
@@ -96,8 +83,8 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
       margin: 4, 
       justifyContent: 'center',
       borderRadius: 14,
+      minHeight: 40,
     },
-    optionContent: { fontSize: 20 },
     resultText: {
       marginTop: 16,
       textAlign: 'center',
@@ -111,7 +98,7 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
     },
     optionColumn: {
       flexDirection: 'column',
-      gap: 8 // 单列时按钮间距
+      gap: 4 // 单列时按钮间距
     }
   });
 
@@ -132,29 +119,14 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
       
       {/* 题目文本 */}
       <View style={{  margin: 20, justifyContent: "space-between" }} >
-        {hasMathFormula(props.question.text) ? (
-          // 包含公式：使用TextWithMath组件
-          <TextWithMath
+                  <AutoMathText
             content={props.question.text}
             textColor={theme.colors.onSurface}
             backgroundColor={'transparent'}
           />
-        ) : (
-          // 不包含公式：使用普通Text组件
-          <Text
-            style={{
-              ...theme.fonts.labelLarge,
-              marginLeft: 8,
-              flex: 1,
-              color: theme.colors.onSurface,
-            }}
-          >
-            {props.question.text}
-          </Text>
-        )}
       </View>
 
-      {/* 选项按钮 - 程序化生成 + 自适应布局 */}
+      {/* 选项按钮 */}
       <View style={{ margin: 16 }}>
         {isSingleColumn ? (
           // 单列显示：一行一个按钮
@@ -163,7 +135,7 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
               <Button
                 key={`option-${option.index}`}
                 mode="contained"
-                style={[getOptionButtonStyle(option.index), {maxHeight: 50}]}
+                style={[getOptionButtonStyle(option.index)]}
                 labelStyle={{ fontSize: 23 }}
                 onPress={() => handleOptionPress(option.index)}
                 disabled={showResult}

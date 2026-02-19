@@ -25,13 +25,11 @@ export default function RootLayout() {
           <Material3ThemeProvider>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="settings/e2" options={{ headerShown: false }} />
               <Stack.Screen name="settings/manageQuestionBases/index" options={{ headerShown: true,title:'管理题库' }} />
               <Stack.Screen name="settings/manageQuestionBases/manageQuestionBase/index" options={{ headerShown: false,title:'编辑题库' }} />
               <Stack.Screen name="settings/AddQuestionBases/ImportQuestionBase/index" options={{ headerShown: true,title:'导入题库' }} />
               <Stack.Screen name="settings/AddQuestionBases/index" options={{ headerShown: false,title:'选择添加题库的方式' }} />
 
-              <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
             </Stack>
           </Material3ThemeProvider>
         </SafeAreaProvider>

@@ -2,13 +2,12 @@ import React, { useState } from 'react';
 import { Platform, StyleSheet, View, ViewStyle } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 
-interface TextWithLatexProps {
+export interface TextWithLatexProps {
   content: string;
   textColor?: string;
   backgroundColor?: string;
   fontSize?: number;
   style?: ViewStyle;
-  // 新增居中属性，默认false
   centered?: boolean;
 }
 
