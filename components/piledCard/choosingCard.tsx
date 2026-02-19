@@ -1,5 +1,5 @@
 import { ChoiceQuestion } from "@/scripts/questions/ChoiceQuestion";
-import { useEffect, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
@@ -11,7 +11,7 @@ export interface ChoosingCardProps {
   onRenderComplete?: () => void;
 };
 
-export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
+const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
   const theme = useAppTheme();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // 用户选择的选项索引
   const [showResult, setShowResult] = useState<boolean>(false); // 是否显示答题结果
@@ -19,7 +19,10 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
   const Reset = () => {
     setSelectedIndex(null);
     setShowResult(false);
-  }
+  };
+  useImperativeHandle(ref, () => ({
+    Reset,
+  }));
 
   useEffect(()=>Reset(), [props.question]);
 
@@ -27,7 +30,6 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
   const handleOptionPress = (index: number) => {
     setSelectedIndex(index);
     setShowResult(true);
-    // 触发回调函数（如果传入）
     if (props.onAnswerSubmit) {
       const isCorrect = index === props.question.correctChoiceIndex;
       props.onAnswerSubmit(isCorrect, props.question.id, index);
@@ -42,23 +44,24 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
     
     // 正确选项
     if (index === props.question.correctChoiceIndex) {
-      return theme.dark ? '#228B22' : '#90EE90';
+      return theme.colors.primary ;
     }
     
     // 用户选错的选项
     if (index === selectedIndex && index !== props.question.correctChoiceIndex) {
-      return theme.dark ? '#B22222' : '#FF6347';
+      return theme.colors.errorContainer;
     }
     
     // 其他选项（未选中/非正确）
-    return theme.colors.primary;
+    return theme.colors.surfaceDisabled;
   };
 
   const getOptionButtonStyle = (index: number) => {
+    // 根据[选项索引]和[答题结果]获取背景颜色
     const bgColor = getOptionBgColor(index);
     return [
       styleSheet.option,
-      { backgroundColor: bgColor } // 直接拼接背景色，无类型嵌套
+      { backgroundColor: bgColor }
     ];
   };
 
@@ -87,19 +90,21 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
       minHeight: 40,
     },
     resultText: {
-      marginTop: 16,
+      marginTop: 10,
       textAlign: 'center',
       fontSize: 18,
-      fontWeight: 'bold'
+      fontWeight: 'bold',
+      paddingBottom: -10,
     },
     optionRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginVertical: 4
+      marginVertical: 1
     },
     optionColumn: {
       flexDirection: 'column',
-      gap: 4 // 单列时按钮间距
+      gap: 4,
+      justifyContent: 'flex-end',
     }
   });
 
@@ -130,7 +135,7 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
       </View>
     </View>
       {/* 选项按钮 */}
-      <View style={{ margin: 16,height: 200 }}>
+      <View style={{ margin: 16,flex: 1,justifyContent: 'flex-end' }}>
         {isSingleColumn ? (
           // 单列显示：一行一个按钮
           <View style={styleSheet.optionColumn}>
@@ -174,7 +179,6 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
             ))}
           </>
         )}
-      </View>
 
       {/* 答题结果显示 */}
       {showResult && (
@@ -187,6 +191,13 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
           {selectedIndex === props.question.correctChoiceIndex ? '回答正确！' : '回答错误！'}
         </Text>
       )}
+      </View>
+
     </View>
   );
+})
+export interface ChoosingCardRef {
+  Reset: () => void;
 }
+ChoosingCard.displayName = 'ChoosingCard';
+export default ChoosingCard;

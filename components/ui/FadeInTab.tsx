@@ -63,7 +63,7 @@ const FadeInView: React.FC<PropsWithChildren<object>> = props => {
   );
 };
 
-export default function FadeInTab({ children }: Readonly<{ children: React.ReactNode }>) {
+const FadeInTab: React.FC<PropsWithChildren<object>> = props => {
   const theme = useAppTheme();
   return (
     <Material3ThemeProvider>
@@ -74,8 +74,10 @@ export default function FadeInTab({ children }: Readonly<{ children: React.React
           justifyContent: 'center',
           backgroundColor: theme.colors.surfaceContainer,
         }}>
-        <FadeInView>{children}</FadeInView>
+        <FadeInView>{props.children}</FadeInView>
       </View>
     </Material3ThemeProvider>
   );
 }
+
+export default FadeInTab;

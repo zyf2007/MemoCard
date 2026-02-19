@@ -1,5 +1,5 @@
 import { ChoiceQuestion, Question } from '@/scripts/questions';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -12,7 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
-import ChoosingCard from './choosingCard';
+import ChoosingCard, { ChoosingCardRef } from './choosingCard';
 
 const { width, height } = Dimensions.get('window');
 const THRESHOLD = width * 0.3;
@@ -29,14 +29,20 @@ interface PiledCardProps {
 function IndividualCard({
   index,
   currentIndexSv,
+  currentIndex,
   translateX,
   translateY,
   question,
   onAnswerSubmit,
   theme
 }: any) {
+  const cardRef = useRef<ChoosingCardRef>(null);
+      if(index - currentIndex === 1) {
+      cardRef.current?.Reset();
+    }
   const style = useAnimatedStyle(() => {
     const relIndex = index - currentIndexSv.value;
+
     // 当前卡片
     if (relIndex === 0) {
       return {
@@ -95,7 +101,7 @@ function IndividualCard({
 
   return (
     <Animated.View style={[cardStyles.card, style]}>
-      <ChoosingCard question={question} onAnswerSubmit={onAnswerSubmit} />
+      <ChoosingCard ref={cardRef} question={question} onAnswerSubmit={onAnswerSubmit} />
     </Animated.View>
   );
 
@@ -169,6 +175,7 @@ export default function PiledCard(props: Readonly<PiledCardProps>) {
                   key={q.id}
                   index={qIndex}
                   currentIndexSv={currentIndexSv}
+                  currentIndex={currentIndex}
                   translateX={translateX}
                   translateY={translateY}
                   question={q as ChoiceQuestion}
