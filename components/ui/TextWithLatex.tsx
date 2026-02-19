@@ -9,6 +9,8 @@ export interface TextWithLatexProps {
   fontSize?: number;
   style?: ViewStyle;
   centered?: boolean;
+  // 新增：渲染完成的回调函数
+  onRenderComplete?: () => void;
 }
 
 const TextWithLatex: React.FC<TextWithLatexProps> = ({
@@ -17,7 +19,8 @@ const TextWithLatex: React.FC<TextWithLatexProps> = ({
   backgroundColor = 'transparent',
   fontSize = 16,
   style = {},
-  centered = false, // 设置默认值为false
+  centered = false,
+  onRenderComplete, // 解构出回调函数
 }) => {
   // 状态：存储计算出的高度，初始给一个较小值
   const [webViewHeight, setWebViewHeight] = useState(fontSize * 2);
@@ -25,14 +28,6 @@ const TextWithLatex: React.FC<TextWithLatexProps> = ({
   const mathJaxPath = Platform.OS === 'android' 
     ? 'file:///android_asset/mathjax/tex-svg.js' 
     : 'MathJax/tex-svg.js';
-
-  // 接收来自 WebView 的高度数据
-  const onMessage = (event: WebViewMessageEvent) => {
-    const height = Number(event.nativeEvent.data);
-    if (height) {
-      setWebViewHeight(height);
-    }
-  };
 
 
   const htmlTemplate = `
@@ -55,7 +50,7 @@ const TextWithLatex: React.FC<TextWithLatexProps> = ({
             display: inline-block;
             width: 100%;
             box-sizing: border-box;
-            ${centered ? 'text-align: center;' : ''} 
+            ${centered ? 'text-align: center;' : 'text-align: left;'} 
           }
           mjx-container { 
             color: ${textColor} !important; 
@@ -70,6 +65,8 @@ const TextWithLatex: React.FC<TextWithLatexProps> = ({
             startup: {
               pageReady: () => {
                 return MathJax.startup.defaultPageReady().then(() => {
+                  // 公式渲染完成后通知RN
+                  window.ReactNativeWebView.postMessage('render_complete');
                   // 公式渲染完成后，计算实际高度并发送给 RN
                   setTimeout(sendHeight, 100);
                 });
@@ -95,12 +92,30 @@ const TextWithLatex: React.FC<TextWithLatexProps> = ({
     </html>
   `;
 
+  // 重构消息处理逻辑，区分渲染完成和高度更新
+  const handleWebViewMessage = (event: WebViewMessageEvent) => {
+    const data = event.nativeEvent.data;
+    
+    // 处理渲染完成的消息
+    if (data === 'render_complete') {
+      // 确保回调函数存在且是函数类型
+      typeof onRenderComplete === 'function' && onRenderComplete();
+      return;
+    }
+
+    // 处理高度更新的消息
+    const height = Number(data);
+    if (!isNaN(height) && height > 0) {
+      setWebViewHeight(height);
+    }
+  };
+
   return (
     <View style={[styles.container, { height: webViewHeight }, style,{ backgroundColor: 'transparent' }]}>
       <WebView
         originWhitelist={['*']}
         source={{ html: htmlTemplate }}
-        onMessage={onMessage}
+        onMessage={handleWebViewMessage} // 使用重构后的消息处理函数
         scrollEnabled={false} 
         allowFileAccess={true}
         javaScriptEnabled={true}

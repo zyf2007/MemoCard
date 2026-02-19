@@ -8,6 +8,7 @@ import { AutoMathText } from '../ui/AutoMathText';
 export interface ChoosingCardProps {
   question: ChoiceQuestion;
   onAnswerSubmit?: (isCorrect: boolean, questionId: string, selectedIndex: number) => void;
+  onRenderComplete?: () => void;
 };
 
 export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
@@ -111,23 +112,25 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
   ];
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, justifyContent: 'space-between' }}>
+      <View>
       {/* 题型标题 */}
       <View style={{ margin: 20, marginBottom: 0, flexDirection: "row", justifyContent: "space-between" }} >
         <Text variant='titleMedium' style={{ color: theme.colors.primary }} >单选题</Text>
       </View>
       
       {/* 题目文本 */}
-      <View style={{  margin: 20, justifyContent: "space-between" }} >
+      <View style={{  margin: 20,marginTop: 15, justifyContent: "space-between" }} >
                   <AutoMathText
             content={props.question.text}
             textColor={theme.colors.onSurface}
             backgroundColor={'transparent'}
+            onRenderComplete={() => { console.log('render complete'); props.onRenderComplete?.()}}
           />
       </View>
-
+    </View>
       {/* 选项按钮 */}
-      <View style={{ margin: 16 }}>
+      <View style={{ margin: 16,height: 200 }}>
         {isSingleColumn ? (
           // 单列显示：一行一个按钮
           <View style={styleSheet.optionColumn}>
@@ -141,7 +144,6 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
                 disabled={showResult}
                 aria-label={`option${option.label}`}
               >
-                {/* 传入option.index给渲染函数 */}
                 {renderOptionContent(option.text, option.index)}
               </Button>
             ))}
@@ -164,7 +166,6 @@ export default function ChoosingCard(props: Readonly<ChoosingCardProps>) {
                       disabled={showResult}
                       aria-label={`option${option.label}`}
                     >
-                      {/* 传入option.index给渲染函数 */}
                       {renderOptionContent(option.text, option.index)}
                     </Button>
                   );

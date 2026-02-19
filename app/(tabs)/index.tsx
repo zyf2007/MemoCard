@@ -11,14 +11,14 @@ export default function HomeScreen() {
   setTimeout(() => {
     setVisible(true);
   }, 1000);
-
+  console.log(QuestionBaseManager.getInstance().getQuestionBaseByName('选择题2')?.questions)
   return (
     <FadeInTab>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <Text>Hello World!</Text>
         {visible && (
           <PiledCard
-            getQuestion={(i)=>QuestionBaseManager.getInstance().getQuestionBaseByName('选择题2')?.questions[Math.abs(i)%2] as Question}
+            getQuestion={(i)=>QuestionBaseManager.getInstance().getQuestionBaseByName('选择题2')?.questions[(i+3)%3] as Question}
           />
         )}  
         {/* <AsyncStorageTestComponent /> */}

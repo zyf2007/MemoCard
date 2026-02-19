@@ -1,175 +1,82 @@
 import { ChoiceQuestion, Question } from '@/scripts/questions';
-import React, { memo, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
   Extrapolation,
   interpolate,
   runOnJS,
-  useAnimatedReaction,
   useAnimatedStyle,
   useSharedValue,
-  withDelay,
   withSpring,
-  withTiming
+  withTiming,
 } from 'react-native-reanimated';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
 import ChoosingCard from './choosingCard';
 
 const { width, height } = Dimensions.get('window');
 const THRESHOLD = width * 0.3;
+const SWIPE_OUT_DURATION = 250;
 
 interface PiledCardProps {
-  getQuestion: (index: number) => Question;
+  getQuestion: (index: number) => Question | null;
   onAnswerSubmit?: (isCorrect: boolean, questionId: string, selectedIndex: number) => void;
 }
 
-export default function PiledCard(props: Readonly<PiledCardProps>) {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  // 提前告诉临时覆盖的卡片下一个索引，确保数据不被setCurrentIndex更新
-  const [nextIndex, setNextIndex] = useState(0);
-
-  const translateX = useSharedValue(0);
-  const translateY = useSharedValue(0);
-
-  const updateIndex = (step: number) => {
-    setCurrentIndex((prev) => prev + step);
-    console.log('nextIndex', nextIndex)
-    setTimeout(() => {
-      translateX.value = 0;
-      translateY.value = 0;
-    }, 700);
-
-    
-  };
-
-  const panGesture = Gesture.Pan()
-    .onUpdate((e) => {
-      const isVertical = Math.abs(e.translationY) > Math.abs(e.translationX) * 2;
-
-      if (isVertical) {
-        translateY.value = e.translationY;
-        translateX.value = e.translationX * 0.3;
-      } else {
-        translateX.value = e.translationX;
-        translateY.value = e.translationY * 0.3;
-      }
-      // 在动画完成前先记录当前索引，确保临时遮挡数据不被updateIndex影响
-      runOnJS(setNextIndex)(e.velocityX > 0 ? currentIndex - 1 : currentIndex + 1);
-    })
-    .onEnd((e) => {
-      const { velocityX, velocityY } = e;
-      const absX = Math.abs(translateX.value);
-      const absY = Math.abs(translateY.value);
-
-      const projectedX = absX + Math.abs(velocityX) * 0.2;
-      const projectedY = absY + Math.abs(velocityY) * 0.2;
-
-      // 1. 判断是否需要回弹 (阈值检查 + 方向一致性检查)
-      const shouldResetX = projectedX < THRESHOLD || (translateX.value > 0 !== velocityX > 0 && velocityX !== 0);
-      const shouldResetY = projectedY < THRESHOLD || (translateY.value > 0 !== velocityY > 0 && velocityY !== 0);
-
-      // 如果水平和垂直都没达到甩出条件，则回弹
-      if (shouldResetX && shouldResetY) {
-        translateX.value = withSpring(0);
-        translateY.value = withSpring(0);
-        return;
-      }
-
-      // 2. 判定主轴方向：水平甩出 vs 垂直甩出
-      if (projectedX > projectedY) {
-        // 水平滑动
-        const isRight = velocityX > 0;
-        const targetX = isRight ? width : -width;
-        
-        translateX.value = withTiming(targetX, { duration: 200 }, (finished) => {
-          if (finished) {
-            runOnJS(updateIndex)(isRight ? -1 : 1);
-          }
-        });
-        translateY.value = withTiming(0, { duration: 200 });
-      } else {
-        // 垂直滑动
-        const isDown = velocityY > 0;
-        const targetY = isDown ? height : -height;
-
-        translateY.value = withTiming(targetY, { duration: 200 }, (finished) => {
-          if (finished) {
-            runOnJS(updateIndex)(1); // 垂直滑暂时视为“下一张”
-          }
-        });
-      }
-    });
-
-  // 1. 下一张 (Next) - 底层
-  const nextStyle = useAnimatedStyle(() => {
-    // 仅在左滑时放大
-    const scale = interpolate(translateX.value, [-width, 0], [1, 0.85], Extrapolation.CLAMP);
-    const opacity = interpolate(translateX.value, [-width, 0], [1, 0.4], Extrapolation.CLAMP);
-    return {
-      transform: [{ scale: scale }],
-      opacity: translateX.value < 0 ? opacity : 0,
-      zIndex: 1,
-    };
-  });
-
-  // 2. 当前张 (Current) - 中间层
-  const currentStyle = useAnimatedStyle(() => {
-    // 右滑时透明度变化：从 1 降到 0.7
-    const opacity = interpolate(translateX.value, [0, width], [1, 0.4], Extrapolation.CLAMP);
-
-    // 右滑时缩小：从 1 缩到 0.85
-    const scale = interpolate(translateX.value, [0, width], [1, 0.85], Extrapolation.CLAMP);
-
-    // 轨道锁定逻辑：右滑时当前卡片 X 轴不动，左滑时跟随
-    const x = Math.min(translateX.value, 0);
-    const y = translateX.value < 0 ? translateY.value : 0;
-    return {
-      transform: [{ translateX: x }, { translateY: y }, { scale: scale }],
-      opacity: opacity,
-      zIndex: 2,
-    };
-  });
-
-  // 3. 前一张 (Prev) - 最顶层
-  const prevStyle = useAnimatedStyle(() => {
-    // 从左侧 -width 处飞入覆盖
-    const x = interpolate(translateX.value, [0, width], [-width, 0], Extrapolation.CLAMP);
-    const y = translateX.value > 0 ? translateY.value : 0;
-    return {
-      transform: [{ translateX: x }, { translateY: y }],
-      opacity: translateX.value > 0 ? 1 : 0,
-      zIndex: 3,
-    };
-  });
-  // 4. 加载遮挡层 (Shelter) - 临时层
-  const shelterOpacity = useSharedValue(0);
-  useAnimatedReaction(
-    // 监听current
-    () => ({ trigger: Math.abs(translateX.value) > width - 5, }),
-    (current, previous) => {
-      // 当 translateX 超过阈值时，立即将 opacity 设为 1
-      if (current.trigger && !previous?.trigger) {
-        shelterOpacity.value = 1;
-        // 延迟 150ms 后再设为 0，确保当前卡片完全隐藏
-        shelterOpacity.value = withDelay(1000, withTiming(0, { duration: 0 }));
-      }
+/**
+ * 单个卡片组件：根据相对索引计算动画
+ */
+function IndividualCard({ 
+  index, 
+  currentIndex, 
+  translateX, 
+  translateY, 
+  question, 
+  onAnswerSubmit,
+  theme 
+}: any){
+  const style = useAnimatedStyle(() => {
+    const relIndex = index - currentIndex;
+    // 当前卡片
+    if (relIndex === 0) {
+      return {
+        zIndex: 2,
+        transform: [
+          { translateX: Math.min(translateX.value, 0) },
+          { translateY: translateX.value < 0 ? translateY.value : 0 },
+          { scale: interpolate(translateX.value, [0, width], [1, 0.95], Extrapolation.CLAMP) }
+        ],
+        opacity: interpolate(translateX.value, [0, width], [1, 0.8], Extrapolation.CLAMP),
+      };
     }
-  );
+    // 下一张卡片
+    if (relIndex === 1) {
+      return {
+        zIndex: 1,
+        transform: [
+          { scale: interpolate(translateX.value, [-width, 0], [1, 0.85], Extrapolation.CLAMP) }
+        ],
+        opacity: translateX.value < 0 
+          ? interpolate(translateX.value, [-width, 0], [1, 0.4], Extrapolation.CLAMP) 
+          : 0,
+      };
+    }
+    // 上一张卡片
+    if (relIndex === -1) {
+      return {
+        zIndex: 3,
+        transform: [
+          { translateX: interpolate(translateX.value, [0, width], [-width, 0], Extrapolation.CLAMP) },
+          { translateY: translateX.value > 0 ? translateY.value : 0 }
+        ],
+        opacity: translateX.value > 0 ? 1 : 0,
+      };
+    }
 
-  const sheltStyle = useAnimatedStyle(() => {
-    return {
-      opacity: shelterOpacity.value,
-      zIndex: 4,
-    };
+    return { opacity: 0 };
   });
-  const theme = useAppTheme();
-  const styles = StyleSheet.create({
-    wrapper: {
-      ...StyleSheet.absoluteFillObject,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
+
+  const cardStyles = StyleSheet.create({
     card: {
       position: 'absolute',
       width: width * 0.86,
@@ -185,39 +92,97 @@ export default function PiledCard(props: Readonly<PiledCardProps>) {
       backgroundColor: theme.colors.surfaceBright,
     }
   });
+
   return (
-    <View style={{ backgroundColor: theme.colors.background, flex: 1 }}>
-      <GestureDetector gesture={panGesture}>
-        <View style={styles.wrapper}>
+    <Animated.View style={[cardStyles.card, style]}>
+      <ChoosingCard question={question} onAnswerSubmit={onAnswerSubmit} />
+    </Animated.View>
+  );
+  
+}
 
-          {/* 下一张 (Next) */}
-          <Animated.View style={[styles.card, nextStyle]}>
-            <MemoizedChoosingCard question={props.getQuestion(currentIndex + 1) as ChoiceQuestion} onAnswerSubmit={props.onAnswerSubmit} />
-          </Animated.View>
+export default function PiledCard(props: Readonly<PiledCardProps>) {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const theme = useAppTheme();
 
-          {/* 当前张 (Current) */}
-          <Animated.View style={[styles.card, currentStyle]}>
-            {/* <Text variant="headlineMedium">{getData(currentIndex)}</Text> */}
-            <MemoizedChoosingCard question={props.getQuestion(currentIndex) as ChoiceQuestion} onAnswerSubmit={props.onAnswerSubmit} />
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
 
-          </Animated.View>
+  const updateIndex = useCallback((step: number) => {
+    setCurrentIndex((prev) => prev + step);
+    translateX.value = 0;
+    translateY.value = 0;
+  }, []);
 
-          {/* 前一张 (Prev) */}
-          <Animated.View style={[styles.card, prevStyle]}>
-            <MemoizedChoosingCard question={props.getQuestion(currentIndex - 1) as ChoiceQuestion} onAnswerSubmit={props.onAnswerSubmit} />
+  const panGesture = Gesture.Pan()
+    .onUpdate((e) => {
+      // const isVertical = Math.abs(e.translationY) > Math.abs(e.translationX) * 2;
+      const isVertical = false;
+      if (isVertical) {
+        translateY.value = e.translationY;
+        translateX.value = e.translationX * 0.35;
+      } else {
+        translateX.value = e.translationX;
+        translateY.value = e.translationY * 0.35;
+      }
+    })
+    .onEnd((e) => {
+      const { velocityX, translationX } = e;
+      const projectedX = translationX + velocityX * 0.2;
 
-          </Animated.View>
+      if (projectedX < -THRESHOLD && projectedX>0===velocityX>0) {
+        translateX.value = withTiming(-width, { duration: SWIPE_OUT_DURATION }, (finished) => {
+          if (finished) runOnJS(updateIndex)(1);
+        });
+      } else if (projectedX > THRESHOLD&& projectedX>0===velocityX>0) {
+        if (currentIndex > 0) {
+          translateX.value = withTiming(width, { duration: SWIPE_OUT_DURATION }, (finished) => {
+            if (finished) runOnJS(updateIndex)(-1);
+          });
+        } else {
+          translateX.value = withSpring(0);
+        }
+      } else {
+        translateX.value = withSpring(0);
+        translateY.value = withSpring(0);
+      }
+    });
 
-          {/* 加载遮挡层 (Shelter) */}
-          <Animated.View style={[styles.card, sheltStyle, { elevation: 0 }]} pointerEvents={'none'}>
-            <MemoizedChoosingCard question={props.getQuestion(nextIndex) as ChoiceQuestion} onAnswerSubmit={props.onAnswerSubmit} />
+  const questionIndex = [currentIndex - 1, currentIndex, currentIndex + 1];
 
-          </Animated.View>
-
-        </View>
-      </GestureDetector>
-    </View>
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={{ backgroundColor: theme.colors.background, flex: 1 }}>
+        <GestureDetector gesture={panGesture}>
+          <View style={styles.wrapper}>
+            {questionIndex.map((qIndex) => {
+              const q = props.getQuestion(qIndex);
+              if (!q) return null;
+              console.log('renderIndices', qIndex," ",q.id);
+              return (
+                <IndividualCard
+                  key={q.id}
+                  index={qIndex}
+                  currentIndex={currentIndex}
+                  translateX={translateX}
+                  translateY={translateY}
+                  question={q as ChoiceQuestion}
+                  onAnswerSubmit={props.onAnswerSubmit}
+                  theme={theme}
+                />
+              );
+            })}
+          </View>
+        </GestureDetector>
+      </View>
+    </GestureHandlerRootView>
   );
 }
-const MemoizedChoosingCard = memo(ChoosingCard);
 
+const styles = StyleSheet.create({
+  wrapper: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+});
