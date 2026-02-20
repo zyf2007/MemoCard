@@ -1,9 +1,12 @@
 import { Material3ThemeProvider } from '@/hooks/Material3ThemeProvider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { MathRenderer } from '@/scripts/mathjax/GlobalMathRenderer';
+import MathJaxRenderer, { MathJaxRendererRef } from '@/scripts/mathjax/useMathJax';
 import { QuestionBaseManager } from '@/scripts/questions';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -17,8 +20,18 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   QuestionBaseManager.getInstance();
+  const mathJaxRef = useRef<MathJaxRendererRef>(null);
+  MathRenderer.Init(mathJaxRef);
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      <MathJaxRenderer
+              ref={mathJaxRef}
+              initialCache={[]}
+              maxCacheSize={50}
+              onRenderError={(error, sourceLatex) => {
+                console.error('Render error:', error, 'for:', sourceLatex);
+              }}
+      />
       <GestureHandlerRootView style={{ flex: 1 }} >
         <SafeAreaProvider>
           <Material3ThemeProvider>

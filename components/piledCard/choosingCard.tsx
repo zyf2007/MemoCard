@@ -130,7 +130,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
             content={props.question.text}
             textColor={theme.colors.onSurface}
             backgroundColor={'transparent'}
-            onRenderComplete={() => { console.log('render complete'); props.onRenderComplete?.()}}
+            onRenderComplete={() => {  props.onRenderComplete?.()}}
           />
       </View>
     </View>

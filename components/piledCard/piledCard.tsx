@@ -169,7 +169,7 @@ export default function PiledCard(props: Readonly<PiledCardProps>) {
             {questionIndex.map((qIndex) => {
               const q = props.getQuestion(qIndex);
               if (!q) return null;
-              console.log('renderIndices', qIndex, " ", q.id);
+              // console.log('renderIndices', qIndex, " ", q.id);
               return (
                 <IndividualCard
                   key={q.id}
