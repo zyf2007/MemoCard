@@ -4,10 +4,9 @@ import PiledCard from '@/components/piledCard/piledCard';
 import FadeInTab from '@/components/ui/FadeInTab';
 import { Question, QuestionBaseManager } from '@/scripts/questions';
 import { useState } from 'react';
-
 export default function HomeScreen() {
   const [visible, setVisible] = useState(false);
-
+  
   setTimeout(() => {
     setVisible(true);
   }, 1000);
@@ -22,6 +21,7 @@ export default function HomeScreen() {
           />
         )}  
         {/* <AsyncStorageTestComponent /> */}
+
       </View>
     </FadeInTab>
   );
