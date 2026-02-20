@@ -1,13 +1,13 @@
-import { MathJaxRendererRef, RenderResult } from "./useMathJax";
+import { MathJaxRendererRef, RenderOptions, RenderResult } from "../../components/MathSystem/MathJaxRenderer";
 
 export class MathRenderer{
     private static mathJaxRef:React.RefObject<MathJaxRendererRef|null> | null = null;
     public static Init(ref:React.RefObject<MathJaxRendererRef|null>) {
         this.mathJaxRef = ref;
     }   
-    public static Render(latex:string, onComplete:(result:RenderResult)=>void){
+    public static Render(latex:string, onComplete:(result:RenderResult)=>void, options:RenderOptions){
         if(this.mathJaxRef?.current){
-            this.mathJaxRef.current.render(latex, onComplete);
+            this.mathJaxRef.current.render(latex, onComplete, options);
         }
     }
     public static ClearCache() {

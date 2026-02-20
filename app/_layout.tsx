@@ -1,7 +1,7 @@
+import MathJaxRenderer, { MathJaxRendererRef } from '@/components/MathSystem/MathJaxRenderer';
 import { Material3ThemeProvider } from '@/hooks/Material3ThemeProvider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { MathRenderer } from '@/scripts/mathjax/GlobalMathRenderer';
-import MathJaxRenderer, { MathJaxRendererRef } from '@/scripts/mathjax/useMathJax';
 import { QuestionBaseManager } from '@/scripts/questions';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';

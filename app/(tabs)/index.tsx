@@ -10,7 +10,7 @@ export default function HomeScreen() {
   setTimeout(() => {
     setVisible(true);
   }, 1000);
-  console.log(QuestionBaseManager.getInstance().getQuestionBaseByName('选择题2')?.questions)
+  // console.log(QuestionBaseManager.getInstance().getQuestionBaseByName('选择题2')?.questions)
   return (
     <FadeInTab>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>

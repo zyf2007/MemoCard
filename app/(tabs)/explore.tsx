@@ -1,13 +1,13 @@
 // TabTwoScreen.tsx
-import FadeInTab from '@/components/ui/FadeInTab';
-import { MathRenderer } from '@/scripts/mathjax/GlobalMathRenderer';
 import {
   RenderResult
-} from '@/scripts/mathjax/useMathJax';
+} from '@/components/MathSystem/MathJaxRenderer';
+import MathText from '@/components/MathSystem/TextWithMath';
+import FadeInTab from '@/components/ui/FadeInTab';
+import { MathRenderer } from '@/scripts/mathjax/GlobalMathRenderer';
 import React, { useState } from 'react';
 import {
   Button,
-  ScrollView,
   StyleSheet,
   TextInput,
   View
@@ -16,11 +16,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 
 export default function TabTwoScreen() {
-  const [latex, setLatex] = useState('$$\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}$$');
+  const [latex, setLatex] = useState('\\sum_{n=1}^{\\infty} \\frac{1}{n^2} = \\frac{\\pi^2}{6}');
   const [svg, setSvg] = useState<RenderResult | null>(null);
 
   const handleRenderDirect = () => {
-    MathRenderer.Render(latex, (svg) => {  setSvg(svg);});
+    MathRenderer.Render(latex, (svg) => {  setSvg(svg);},{color: '#FFFF00'});
   };
 
 
@@ -44,27 +44,25 @@ export default function TabTwoScreen() {
 
           <View style={styles.buttonRow}>
             <Button
-              title="直接渲染 (await)"
+              title="渲染"
               onPress={handleRenderDirect}
             />
 
             <Button title="清除缓存" onPress={handleClearCache} />
           </View>
 
-
-
-          <ScrollView style={styles.preview}>
             {svg && (
-              <View style={styles.svgContainer}>
                 <SvgXml
                   xml={svg.svg}
                   width={svg.width*10}
                   height={svg.height*10}
                 />
-              </View>
             )}
-          </ScrollView>
-
+          <MathText
+          content='计算电场强度\(\vec{E} = \frac{\vec{F}}{q}\)，若试探电荷\( q = 2×10^{-6} C\)，受到的电场力\(\vec{F} = 4×10^{-3}N\)，则电场强度的大小为？'
+            textColor='#FFFFFF'
+            lineHeight={3}
+          />
           <View style={styles.cacheInfo}>
 
           </View>
