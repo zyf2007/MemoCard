@@ -236,14 +236,14 @@ export const MathText: React.FC<MathTextProps> = ({
           ]}
         >
           <Text style={[styles.loadingText, { color: textColor }]}>
-            {seg.display ? '[公式]' : '...'}
+            {seg.display ? '[公式加载中...]' : '[公式]'}
           </Text>
         </View>
       );
     }
 
     const { svg, width, height } = mathItem.svg;
-    const scale = seg.display ? baseMathSize * 1.2 : baseMathSize;
+    const scale = seg.display ? baseMathSize * 1.1 : baseMathSize;
     const scaledWidth = width * scale;
     const scaledHeight = height * scale;
 
@@ -255,7 +255,7 @@ export const MathText: React.FC<MathTextProps> = ({
           seg.display ? styles.displayMath : styles.inlineMath,
           !seg.display && { 
             height: mathLineHeightValue,  // 行内公式使用指定行高
-            justifyContent: 'center',
+              justifyContent: 'center',
           },
           mathStyle
         ]}
@@ -301,8 +301,8 @@ export const MathText: React.FC<MathTextProps> = ({
             style={[
               styles.blockMathContainer,
               { 
-                marginVertical: paragraphSpacing / 2,
-                minHeight: mathLineHeightValue * 2  // 块级公式给更多空间
+                marginVertical: paragraphSpacing / 6,
+                minHeight: mathLineHeightValue * 1.2  // 块级公式给更多空间
               }
             ]}
           >

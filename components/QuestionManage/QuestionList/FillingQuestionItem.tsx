@@ -1,4 +1,4 @@
-import { AutoMathText } from '@/components/ui/AutoMathText';
+import MathText from '@/components/MathSystem/TextWithMath';
 import { FillingQuestion, Question } from '@/scripts/questions';
 import { Material3Scheme } from '@pchmn/expo-material3-theme';
 import React from 'react';
@@ -29,12 +29,13 @@ export const FillingQuestionItem: React.FC<FillingQuestionItemProps> = ({
         marginBottom: 12
       }}>
         <Icon source="text-box" size={22} color={theme.colors.primary} />
-        <AutoMathText
-          content={question.text}
-          textColor={theme.colors.onSurface}
-          backgroundColor={"transparent"}
-          containerStyle={{ paddingHorizontal: 16 }}
-        />
+        <View style={{ paddingHorizontal: 8 }}>
+          <MathText
+            content={question.text}
+            textColor={theme.colors.onSurface}
+            baseMathSize={8}
+          />
+        </View>
       </View>
 
       {/* 答案区域 */}

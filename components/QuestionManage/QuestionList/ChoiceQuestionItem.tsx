@@ -1,4 +1,4 @@
-import { AutoMathText } from '@/components/ui/AutoMathText';
+import MathText from '@/components/MathSystem/TextWithMath';
 import { ChoiceQuestion, Question } from '@/scripts/questions';
 import { Material3Scheme } from '@pchmn/expo-material3-theme';
 import React from 'react';
@@ -48,14 +48,13 @@ export const ChoiceQuestionItem: React.FC<ChoiceQuestionItemProps> = ({
           {String.fromCodePoint(65 + index)}
         </Text>
         {/* 选项本体 */}
-        <AutoMathText
-            content={choice || '无此选项'}
-            textColor={theme.colors.onSurface}
-            backgroundColor={"transparent"}
-          containerStyle={{ width: '95%' }}
-          centered={true}
-        />
-      </View>
+        
+        <MathText
+          content={choice || '无此选项'}
+          textColor={theme.colors.onSurface}
+          baseMathSize={8}
+        /></View>
+      
     );
   };
 
@@ -74,14 +73,13 @@ export const ChoiceQuestionItem: React.FC<ChoiceQuestionItemProps> = ({
         marginBottom: 12
       }}>
         <Icon source="playlist-check" size={24} color={theme.colors.primary} />
-        <AutoMathText
+<View style={{ paddingHorizontal: 8 }}>
+        <MathText
         content={question.text}
         textColor={theme.colors.onSurface}
-        backgroundColor={"transparent"}
-        containerStyle={{ paddingHorizontal: 16 }}
-        centered={false}
-        />
-        
+        baseMathSize={8}
+      />
+</View>
       </View>
 
       {/* 选项 */}

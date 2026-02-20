@@ -3,7 +3,7 @@ import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
-import { AutoMathText } from '../ui/AutoMathText';
+import MathText from "../MathSystem/TextWithMath";
 
 export interface ChoosingCardProps {
   question: ChoiceQuestion;
@@ -24,7 +24,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
     Reset,
   }));
 
-  useEffect(()=>Reset(), [props.question]);
+  useEffect(() => Reset(), [props.question]);
 
   // 选项点击事件：记录选择并显示结果
   const handleOptionPress = (index: number) => {
@@ -41,17 +41,17 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
     if (!showResult) {
       return theme.colors.primary;
     }
-    
+
     // 正确选项
     if (index === props.question.correctChoiceIndex) {
-      return theme.colors.primary ;
+      return theme.colors.primary;
     }
-    
+
     // 用户选错的选项
     if (index === selectedIndex && index !== props.question.correctChoiceIndex) {
       return theme.colors.errorContainer;
     }
-    
+
     // 其他选项（未选中/非正确）
     return theme.colors.surfaceDisabled;
   };
@@ -68,23 +68,23 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
 
   const renderOptionContent = (text: string, optionIndex: number) => {
     return (
-        <AutoMathText
-          content={text}
-          textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
-          backgroundColor={'transparent'}
-          centered={true}
-          containerStyle={{width: '100%'}}
-        />
-      );
+
+      <MathText
+        content={text}
+        textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
+        baseMathSize={9}
+      />
+
+    );
   };
 
   // 判断是否需要单列显示（任意选项文本长度超过5个字符）
   const isSingleColumn = props.question.choices.some(choice => choice.length > 5);
 
   const styleSheet = StyleSheet.create({
-    option: { 
-      flex: 1, 
-      margin: 4, 
+    option: {
+      flex: 1,
+      margin: 4,
       justifyContent: 'center',
       borderRadius: 14,
       minHeight: 40,
@@ -119,23 +119,23 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
   return (
     <View style={{ flex: 1, justifyContent: 'space-between' }}>
       <View>
-      {/* 题型标题 */}
-      <View style={{ margin: 20, marginBottom: 0, flexDirection: "row", justifyContent: "space-between" }} >
-        <Text variant='titleMedium' style={{ color: theme.colors.primary }} >单选题</Text>
+        {/* 题型标题 */}
+        <View style={{ margin: 20, marginBottom: 0, flexDirection: "row", justifyContent: "space-between" }} >
+          <Text variant='titleMedium' style={{ color: theme.colors.primary }} >单选题</Text>
+        </View>
+
+        {/* 题目文本 */}
+        <View style={{ margin: 20, marginTop: 15, justifyContent: "space-between" }} >
+
+                <MathText
+        content={props.question.text}
+        textColor={theme.colors.onSurface}
+        baseMathSize={9}
+      />
+        </View>
       </View>
-      
-      {/* 题目文本 */}
-      <View style={{  margin: 20,marginTop: 15, justifyContent: "space-between" }} >
-                  <AutoMathText
-            content={props.question.text}
-            textColor={theme.colors.onSurface}
-            backgroundColor={'transparent'}
-            onRenderComplete={() => {  props.onRenderComplete?.()}}
-          />
-      </View>
-    </View>
       {/* 选项按钮 */}
-      <View style={{ margin: 16,flex: 1,justifyContent: 'flex-end' }}>
+      <View style={{ margin: 16, flex: 1, justifyContent: 'flex-end' }}>
         {isSingleColumn ? (
           // 单列显示：一行一个按钮
           <View style={styleSheet.optionColumn}>
@@ -180,17 +180,17 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
           </>
         )}
 
-      {/* 答题结果显示 */}
-      {showResult && (
-        <Text 
-          style={[
-            styleSheet.resultText, 
-            { color: selectedIndex === props.question.correctChoiceIndex ? theme.dark?'#90EE90':'#228B22' : theme.dark?'#FF6347':'#B22222' }
-          ]}
-        >
-          {selectedIndex === props.question.correctChoiceIndex ? '回答正确！' : '回答错误！'}
-        </Text>
-      )}
+        {/* 答题结果显示 */}
+        {showResult && (
+          <Text
+            style={[
+              styleSheet.resultText,
+              { color: selectedIndex === props.question.correctChoiceIndex ? theme.dark ? '#90EE90' : '#228B22' : theme.dark ? '#FF6347' : '#B22222' }
+            ]}
+          >
+            {selectedIndex === props.question.correctChoiceIndex ? '回答正确！' : '回答错误！'}
+          </Text>
+        )}
       </View>
 
     </View>
