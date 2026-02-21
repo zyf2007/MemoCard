@@ -1,9 +1,9 @@
 import { ChoiceQuestion } from "@/scripts/questions/ChoiceQuestion";
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { MathText } from "react-native-latex-text";
 import { Button, Text } from 'react-native-paper';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
-import MathText from "../MathSystem/TextWithMath";
 
 export interface ChoosingCardProps {
   question: ChoiceQuestion;
@@ -73,6 +73,9 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
         content={text}
         textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
         baseMathSize={9}
+        mathStyle={{
+          height: 20,           // 明确高度
+        }}
       />
 
     );
@@ -130,7 +133,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
                 <MathText
         content={props.question.text}
         textColor={theme.colors.onSurface}
-        baseMathSize={9}
+            baseMathSize={9}
       />
         </View>
       </View>
@@ -144,7 +147,6 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
                 key={`option-${option.index}`}
                 mode="contained"
                 style={[getOptionButtonStyle(option.index)]}
-                labelStyle={{ fontSize: 23 }}
                 onPress={() => handleOptionPress(option.index)}
                 disabled={showResult}
                 aria-label={`option${option.label}`}

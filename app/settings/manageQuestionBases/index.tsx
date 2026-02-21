@@ -15,7 +15,7 @@ export default function ManageQuestionBases() {
     const questionBaseManager = QuestionBaseManager.getInstance<QuestionBaseManager>();
     React.useEffect(() => {
         const updateList = () => {
-            console.log("QuestionBaseListUpdated");
+            console.log("[QuestionBasesManage] QuestionBaseListUpdated");
             setQuestionBaseName("");
             const newList = questionBaseManager.getQuestionBaseNames() || [];
             setQuestionBaseList(Array.isArray(newList) ? newList : []);

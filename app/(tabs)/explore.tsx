@@ -1,10 +1,5 @@
 // TabTwoScreen.tsx
-import {
-  RenderResult
-} from '@/components/MathSystem/MathJaxRenderer';
-import MathText from '@/components/MathSystem/TextWithMath';
 import FadeInTab from '@/components/ui/FadeInTab';
-import { MathRenderer } from '@/scripts/mathjax/GlobalMathRenderer';
 import React, { useState } from 'react';
 import {
   Button,
@@ -12,6 +7,11 @@ import {
   TextInput,
   View
 } from 'react-native';
+import {
+  MathRenderer,
+  MathText,
+  RenderResult
+} from 'react-native-latex-text';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 
@@ -61,7 +61,6 @@ export default function TabTwoScreen() {
           <MathText
           content='计算电场强度\(\vec{E} = \frac{\vec{F}}{q}\)，若试探电荷\( q = 2×10^{-6} C\)，受到的电场力\(\vec{F} = 4×10^{-3}N\)，则电场强度的大小为？'
             textColor='#FFFFFF'
-            lineHeight={3}
           />
           <View style={styles.cacheInfo}>
 

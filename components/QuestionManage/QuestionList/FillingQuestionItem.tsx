@@ -1,8 +1,8 @@
-import MathText from '@/components/MathSystem/TextWithMath';
 import { FillingQuestion, Question } from '@/scripts/questions';
 import { Material3Scheme } from '@pchmn/expo-material3-theme';
 import React from 'react';
 import { View } from 'react-native';
+import { MathText } from 'react-native-latex-text';
 import { Divider, Icon, IconButton, MD3Theme, Text } from 'react-native-paper';
 
 interface FillingQuestionItemProps {

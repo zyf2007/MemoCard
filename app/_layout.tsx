@@ -1,13 +1,12 @@
-import MathJaxRenderer, { MathJaxRendererRef } from '@/components/MathSystem/MathJaxRenderer';
 import { Material3ThemeProvider } from '@/hooks/Material3ThemeProvider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { MathRenderer } from '@/scripts/mathjax/GlobalMathRenderer';
 import { QuestionBaseManager } from '@/scripts/questions';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { MathJaxRenderer, MathJaxRendererRef, MathRenderer } from 'react-native-latex-text';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
@@ -25,22 +24,22 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <MathJaxRenderer
-              ref={mathJaxRef}
-              initialCache={[]}
-              maxCacheSize={50}
-              onRenderError={(error, sourceLatex) => {
-                console.error('Render error:', error, 'for:', sourceLatex);
-              }}
+        ref={mathJaxRef}
+        initialCache={[]}
+        maxCacheSize={50}
+        onRenderError={(error, sourceLatex) => {
+          console.error('Render error:', error, 'for:', sourceLatex);
+        }}
       />
       <GestureHandlerRootView style={{ flex: 1 }} >
         <SafeAreaProvider>
           <Material3ThemeProvider>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-              <Stack.Screen name="settings/manageQuestionBases/index" options={{ headerShown: true,title:'管理题库' }} />
-              <Stack.Screen name="settings/manageQuestionBases/manageQuestionBase/index" options={{ headerShown: false,title:'编辑题库' }} />
-              <Stack.Screen name="settings/AddQuestionBases/ImportQuestionBase/index" options={{ headerShown: true,title:'导入题库' }} />
-              <Stack.Screen name="settings/AddQuestionBases/index" options={{ headerShown: false,title:'选择添加题库的方式' }} />
+              <Stack.Screen name="settings/manageQuestionBases/index" options={{ headerShown: true, title: '管理题库' }} />
+              <Stack.Screen name="settings/manageQuestionBases/manageQuestionBase/index" options={{ headerShown: false, title: '编辑题库' }} />
+              <Stack.Screen name="settings/AddQuestionBases/ImportQuestionBase/index" options={{ headerShown: true, title: '导入题库' }} />
+              <Stack.Screen name="settings/AddQuestionBases/index" options={{ headerShown: false, title: '选择添加题库的方式' }} />
 
             </Stack>
           </Material3ThemeProvider>

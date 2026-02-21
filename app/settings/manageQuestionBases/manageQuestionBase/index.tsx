@@ -57,7 +57,7 @@ export default function ImportQuestionBase() {
     refreshQuestionList();
     const unsubscribe = questionBase?.onQuestionListUpdated.subscribe(refreshQuestionList);
     return () => {
-      console.log('unsubscribe');
+      console.log('[QuestionBaseManage] Backend unsubscribed');
       unsubscribe?.();
     };
   }, [questionBase, refreshQuestionList]);

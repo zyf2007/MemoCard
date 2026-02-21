@@ -1,8 +1,8 @@
-import MathText from '@/components/MathSystem/TextWithMath';
 import { ChoiceQuestion, Question } from '@/scripts/questions';
 import { Material3Scheme } from '@pchmn/expo-material3-theme';
 import React from 'react';
 import { View } from 'react-native';
+import { MathText } from 'react-native-latex-text';
 import { Divider, Icon, IconButton, MD3Theme, Text } from 'react-native-paper';
 
 interface ChoiceQuestionItemProps {
@@ -53,6 +53,9 @@ export const ChoiceQuestionItem: React.FC<ChoiceQuestionItemProps> = ({
           content={choice || '无此选项'}
           textColor={theme.colors.onSurface}
           baseMathSize={8}
+          mathStyle={{
+              height: 25,           // 明确高度
+          }}
         /></View>
       
     );
