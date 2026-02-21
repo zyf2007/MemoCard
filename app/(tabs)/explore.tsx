@@ -58,10 +58,10 @@ export default function TabTwoScreen() {
                   height={svg.height*10}
                 />
             )}
-          <MathText
-          content='计算电场强度\(\vec{E} = \frac{\vec{F}}{q}\)，若试探电荷\( q = 2×10^{-6} C\)，受到的电场力\(\vec{F} = 4×10^{-3}N\)，则电场强度的大小为？'
-            textColor='#FFFFFF'
-          />
+<MathText
+  content='$Welcome to \LaTeX$\n块级公式：求以下定积分的结果：\[\int_0^2 x^3 dx\]\n行内公式：计算电场强度\(\vec{E} = \frac{\vec{F}}{q}\)，若试探电荷\(q = 2×10^{-6}C\)，受到的电场力\(\vec{F} = 4×10^{-3}N\)，则电场强度的大小为？'
+  textColor='#FFFFFF'
+/>
           <View style={styles.cacheInfo}>
 
           </View>

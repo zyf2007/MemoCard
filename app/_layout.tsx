@@ -1,5 +1,6 @@
 import { Material3ThemeProvider } from '@/hooks/Material3ThemeProvider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
 import { QuestionBaseManager } from '@/scripts/questions';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
@@ -19,6 +20,7 @@ export const unstable_settings = {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   QuestionBaseManager.getInstance();
+  QuestionGenerator.getInstance();
   const mathJaxRef = useRef<MathJaxRendererRef>(null);
   MathRenderer.Init(mathJaxRef);
   return (

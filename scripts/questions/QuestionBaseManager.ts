@@ -23,7 +23,7 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
         await this.readData();
     }
 
-    // 读取本地数据（原有逻辑）
+    // 读取本地数据
     private async readData() {
         try {
             const value = await AsyncStorage.getItem(this.STORAGE_KEY);
@@ -120,6 +120,10 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
         // 触发列表更新回调
         this.onQuestionBaseListUpdated.invoke();
         return true;
+    }
+
+    public hasQuestionBase(baseName: string): boolean {
+        return this.getQuestionBaseByName(baseName) !== undefined;
     }
 
 

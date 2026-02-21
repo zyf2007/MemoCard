@@ -1,3 +1,5 @@
+import { MaterialSwitch } from '@/components/materialSwitch';
+import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
 import { router } from 'expo-router';
 import React from 'react';
 import { View } from 'react-native';
@@ -16,6 +18,15 @@ export const QuestionBaseItem: React.FC<QuestionBaseItemProps> = ({
   theme,
   onDeletePress
 }) => {
+    const [isSwitchOn, setIsSwitchOn] = React.useState(QuestionGenerator.getInstance().isQuestionBaseEnabled(name));
+  const onToggleSwitch = () => {
+        setIsSwitchOn(!isSwitchOn);
+        if (isSwitchOn) {
+            QuestionGenerator.getInstance().disableQuestionBase(name);
+        } else {
+            QuestionGenerator.getInstance().enableQuestionBase(name);
+        }
+  };
   return (
     <List.Item
       key={name}
@@ -44,6 +55,7 @@ export const QuestionBaseItem: React.FC<QuestionBaseItemProps> = ({
             mode="contained" 
             onPress={onDeletePress} 
           />
+        <MaterialSwitch  selected={isSwitchOn} onPress={onToggleSwitch} />
         </View>
       )}
     />
