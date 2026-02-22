@@ -8,9 +8,11 @@ import {
 import { Icon, useTheme } from 'react-native-paper';
 import { IconSource } from 'react-native-paper/lib/typescript/components/Icon';
 import Animated, {
+  Easing,
   Extrapolate,
   interpolate,
   interpolateColor,
+  ReduceMotion,
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
@@ -18,7 +20,7 @@ import Animated, {
 } from 'react-native-reanimated';
 
 type SwitchProps = {
-  selected: boolean;
+  switchOn: boolean;
   onPress: () => void;
   switchOnIcon?: IconSource; // IconSource from 'react-native-paper/lib/typescript/components/Icon'
   switchOffIcon?: IconSource; // IconSource from 'react-native-paper/lib/typescript/components/Icon'
@@ -27,20 +29,19 @@ type SwitchProps = {
 };
 
 export const MaterialSwitch = ({
-  selected,
+  switchOn,
   onPress,
   switchOnIcon,
   switchOffIcon,
   disabled,
-  animDuration = 150,
+  animDuration = 130,
 }: SwitchProps) => {
   const theme = useTheme();
-  const position = useSharedValue(selected ? 10 : -10);
-  const handleHeight = useSharedValue(selected ? 24 : 16);
-  const handleWidth = useSharedValue(selected ? 24 : 16);
-  const [active, setActive] = useState(selected);
+  const position = useSharedValue(switchOn ? 10 : -10);
+  const handleHeight = useSharedValue(switchOn ? 24 : 16);
+  const handleWidth = useSharedValue(switchOn ? 24 : 16);
+  const [active, setActive] = useState(switchOn);
   const [isPressed, setIsPressed] = useState(false);
-  //#region
   const pan = Gesture.Pan()
     .activateAfterLongPress(100)
     .onTouchesUp(() => setIsPressed(false))
@@ -51,112 +52,81 @@ export const MaterialSwitch = ({
       handleHeight.value = withTiming(28, { duration: 160 });
       handleWidth.value = withTiming(28, { duration: 160 });
     })
-    .onChange((event) => {
-      if (position.value + event.translationX / 10 < -10) {
-        position.value = -10;
-        return;
-      }
-      if (position.value + event.translationX / 10 > 10) {
-        position.value = 10;
-        return;
-      }
-      position.value += event.translationX / 10;
-    })
     .onEnd(() => {
       setIsPressed(false);
-      if (position.value > 0) {
-        position.value = withTiming(10);
-        handleHeight.value = withTiming(24, { duration: 160 });
-        handleWidth.value = withTiming(24, { duration: 160 }, (finished) => {
-          'worklet';
-          if (finished && !active) {
-            runOnJS(callbackFunction)();
-          }
-        });
-        return;
-      }
+      position.value = withTiming(switchOn ? 10 : -10, { duration: animDuration });
+      handleHeight.value = withTiming(switchOn ? 24 : 16, { duration: animDuration });
+      handleWidth.value = withTiming(switchOn ? 24 : 16, { duration: animDuration });
 
-      if (position.value < 0) {
-        position.value = withTiming(-10);
-        handleHeight.value = withTiming(16, { duration: 160 });
-        handleWidth.value = withTiming(16, { duration: 160 }, (finished) => {
-          'worklet';
-          if (finished && active) {
-            runOnJS(callbackFunction)();
-          }
-        });
-        return;
-      }
     });
-  //#endregion
   const handleStyle = useAnimatedStyle(() =>
     disabled
       ? {
-          transform: [{ translateX: active ? 10 : -10 }],
-          height: active ? 24 : 16,
-          width: active ? 24 : 16,
-          marginVertical: 'auto',
-          minHeight: switchOffIcon ? 24 : 16,
-          minWidth: switchOffIcon ? 24 : 16,
-          opacity: active ? 1 : 0.36,
-          backgroundColor: active
-            ? theme.colors.surface
-            : theme.colors.onSurface,
-          borderRadius: 20,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }
+        transform: [{ translateX: active ? 10 : -10 }],
+        height: active ? 24 : 16,
+        width: active ? 24 : 16,
+        marginVertical: 'auto',
+        minHeight: switchOffIcon ? 24 : 16,
+        minWidth: switchOffIcon ? 24 : 16,
+        opacity: active ? 1 : 0.36,
+        backgroundColor: active
+          ? theme.colors.surface
+          : theme.colors.onSurface,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }
       : {
-          transform: [{ translateX: position.value }],
-          opacity: 1,
-          height: handleHeight.value,
-          width: handleWidth.value,
-          marginVertical: 'auto',
-          minHeight: switchOffIcon ? 24 : 16,
-          minWidth: switchOffIcon ? 24 : 16,
-          backgroundColor: interpolateColor(
-            position.value,
-            [-10, 10],
-            [theme.colors.outline, theme.colors.onPrimary]
-          ),
-          borderRadius: 20,
-          justifyContent: 'center',
-          alignItems: 'center',
-        }
+        transform: [{ translateX: position.value }],
+        opacity: 1,
+        height: handleHeight.value,
+        width: handleWidth.value,
+        marginVertical: 'auto',
+        minHeight: switchOffIcon ? 24 : 16,
+        minWidth: switchOffIcon ? 24 : 16,
+        backgroundColor: interpolateColor(
+          position.value,
+          [-10, 10],
+          [theme.colors.outline, theme.colors.onPrimary]
+        ),
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+      }
   );
   const trackStyle = useAnimatedStyle(() =>
     disabled
       ? {
-          borderWidth: 2,
-          borderRadius: 16,
-          justifyContent: 'center',
-          height: 32,
-          width: 52,
-          opacity: 0.12,
-          backgroundColor: active
-            ? theme.colors.onSurface
-            : theme.colors.surfaceVariant,
-          borderColor: theme.colors.onSurface,
-        }
+        borderWidth: 2,
+        borderRadius: 16,
+        justifyContent: 'center',
+        height: 32,
+        width: 52,
+        opacity: 0.12,
+        backgroundColor: active
+          ? theme.colors.onSurface
+          : theme.colors.surfaceVariant,
+        borderColor: theme.colors.onSurface,
+      }
       : {
-          alignItems: 'center',
-          opacity: 1,
-          backgroundColor: interpolateColor(
-            position.value,
-            [-10, 10],
-            [theme.colors.surfaceVariant, theme.colors.primary]
-          ),
-          borderColor: interpolateColor(
-            position.value,
-            [-10, 10],
-            [theme.colors.outline, theme.colors.primary]
-          ),
-          borderWidth: 2,
-          borderRadius: 16,
-          justifyContent: 'center',
-          height: 32,
-          width: 52,
-        }
+        alignItems: 'center',
+        opacity: 1,
+        backgroundColor: interpolateColor(
+          position.value,
+          [-10, 10],
+          [theme.colors.surfaceVariant, theme.colors.primary]
+        ),
+        borderColor: interpolateColor(
+          position.value,
+          [-10, 10],
+          [theme.colors.outline, theme.colors.primary]
+        ),
+        borderWidth: 2,
+        borderRadius: 16,
+        justifyContent: 'center',
+        height: 32,
+        width: 52,
+      }
   );
 
   const callbackFunction = () => {
@@ -203,37 +173,55 @@ export const MaterialSwitch = ({
     ],
     // width: interpolate(position.value, [5, 10], [0, 16]),
   }));
+
   const changeSwitch = (withCallback: boolean) => {
     if (active) {
-      handleHeight.value = withTiming(16, { duration: 100 });
-      handleWidth.value = withTiming(16, { duration: 100 });
+      const changeSwitchOffHandleConfig = {
+        duration: animDuration,
+        easing: Easing.in(Easing.bezierFn(0.17, 1.87, 0.89, 0.79)),
+        reduceMotion: ReduceMotion.System,
+      }
+      handleHeight.value = withTiming(16, changeSwitchOffHandleConfig);
+      handleWidth.value = withTiming(16, changeSwitchOffHandleConfig);
       position.value = withTiming(
         -10,
-        { duration: animDuration },
+        {
+          duration: 200,
+          easing: Easing.in(Easing.bezierFn(0, 1.03, 1, 1.2)),
+          reduceMotion: ReduceMotion.System,
+        },
         withCallback
           ? (finished) => {
-              'worklet';
-              if (finished) {
-                runOnJS(callbackFunction)();
-              }
+            'worklet';
+            if (finished) {
+              runOnJS(callbackFunction)();
             }
+          }
           : undefined
       );
       setActive(false);
     } else {
-      handleHeight.value = withTiming(24, { duration: 100 });
-      handleWidth.value = withTiming(24, { duration: 100 });
-
+      const changeSwitchOnHandleConfig = {
+        duration: animDuration,
+        easing: Easing.out(Easing.bezierFn(0.06, -0.13, 0.83, -0.98)),
+        reduceMotion: ReduceMotion.System,
+      }
+      handleHeight.value = withTiming(24, changeSwitchOnHandleConfig);
+      handleWidth.value = withTiming(24, changeSwitchOnHandleConfig);
       position.value = withTiming(
         10,
-        { duration: animDuration },
+        {
+          duration: 200,
+          easing: Easing.in(Easing.bezierFn(0, 1.03, 1, 1.2)),
+          reduceMotion: ReduceMotion.System,
+        },
         withCallback
           ? (finished) => {
-              'worklet';
-              if (finished) {
-                runOnJS(callbackFunction)();
-              }
+            'worklet';
+            if (finished) {
+              runOnJS(callbackFunction)();
             }
+          }
           : undefined
       );
       setActive(true);
@@ -243,14 +231,12 @@ export const MaterialSwitch = ({
     onPress != null ? onPress() : null;
   };
   useEffect(() => {
-    if (active != selected) {
+    if (active != switchOn) {
       changeSwitch(false);
     }
-    handleHeight.value = withTiming(selected ? 24 : 16);
-    handleWidth.value = withTiming(selected ? 24 : 16);
-  }, [selected]);
+  }, [switchOn]);
   return (
-    <View style={{ borderRadius: 20, backgroundColor: theme.colors.surface,alignSelf:'center',marginLeft:9 }}>
+    <View style={{ borderRadius: 20, backgroundColor: theme.colors.surface, alignSelf: 'center', marginLeft: 9 }}>
       <View pointerEvents="none" style={styles.stateOuter}>
       </View>
       <Animated.View style={trackStyle} key={1}>

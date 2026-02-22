@@ -22,29 +22,31 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
     }
 
     private async persistConfig() {
-        await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.config));
+        await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.config.ToJson()));
     }
 
     public async enableQuestionBase(questionBaseName: string) {
-        this.config.enabledQuestionBaseNames.push(questionBaseName);
+        this.config.enabledQuestionBaseNames.add(questionBaseName);
         await this.persistConfig();
     }
 
     public async disableQuestionBase(questionBaseName: string) {
-        this.config.enabledQuestionBaseNames = this.config.enabledQuestionBaseNames.filter((name) => name !== questionBaseName);
+        this.config.enabledQuestionBaseNames.delete(questionBaseName);
         await this.persistConfig();
     }
 
     private async verifyQuestionBases() {
-        this.config.enabledQuestionBaseNames = this.config.enabledQuestionBaseNames.filter((name) => this.baseManager.hasQuestionBase(name));
+        this.config.enabledQuestionBaseNames = new Set([...this.config.enabledQuestionBaseNames].filter((name) => this.baseManager.hasQuestionBase(name)));
         await this.persistConfig();
         if (DEBUG_MODE) {
             console.log("[QuestionGenerator] verifyQuestionBases ", this.config.enabledQuestionBaseNames);
         }
     }
     public isQuestionBaseEnabled(questionBaseName: string) {
-        return this.config.enabledQuestionBaseNames.includes(questionBaseName);
+        return this.config.enabledQuestionBaseNames.has(questionBaseName);
     }
-
+    public getEnabledQuestionBaseNames() {
+        return [...this.config.enabledQuestionBaseNames];
+    }
 
 }

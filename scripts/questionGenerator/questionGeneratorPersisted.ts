@@ -1,8 +1,15 @@
 export class QuestionGeneratorPersisted {
 
-    public enabledQuestionBaseNames: string[] = [];
+    public enabledQuestionBaseNames: Set<string> = new Set();
 
     FromJson(json: any) {
-        this.enabledQuestionBaseNames = json.enabledQuestionBaseNames || [];
+        console.log("[QuestionGeneratorPersisted] FromJson ", json.enabledQuestionBaseNames);
+        this.enabledQuestionBaseNames = new Set(json.enabledQuestionBaseNames || []);
+    }
+
+    ToJson() {
+        return {
+            enabledQuestionBaseNames: [...this.enabledQuestionBaseNames],
+        };
     }
 }
