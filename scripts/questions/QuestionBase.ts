@@ -5,7 +5,7 @@ import { FillingQuestion } from "./FillingQuestion";
 import { Question } from "./Question";
 
 export class QuestionBase {
-    // 题库名称：外部只读，内部可写
+    //#region Init / Persistence
     private _baseName: string;
     public get baseName(): string {
         return this._baseName;
@@ -13,30 +13,14 @@ export class QuestionBase {
     private set baseName(newName: string) {
         this._baseName = newName;
     }
-    public onQuestionListUpdated: Func<() => void> = new Func();
 
-    // 题目列表：外部只读，内部可写
+
     private _questions: Question[] = [];
     public get questions(): Question[] {
         return [...this._questions];
     }
 
-    // 修改回调：触发数据持久化
-    private readonly onUpdate: () => Promise<boolean>;
-
-    /**
-     * 构造函数
-     * @param baseName 题库名称
-     * @param rawQuestions 初始题目数据
-     * @param onUpdate 修改后触发的持久化回调
-     */
-    constructor(baseName: string, rawQuestions: any, onUpdate: () => Promise<boolean>) {
-        this._baseName = baseName;
-        this._questions = this.parseJsonString(JSON.stringify(rawQuestions));
-        this.onUpdate = onUpdate; // 绑定持久化回调
-    }
-
-    // 解析JSON为题目列表（原有逻辑）
+    // 解析JSON为题目列表
     private parseJsonString(s: string): Question[] {
         const ret: Question[] = [];
         try {
@@ -66,15 +50,34 @@ export class QuestionBase {
         return ret;
     }
 
+    /**
+     * 构造函数
+     * @param baseName 题库名称
+     * @param rawQuestions 初始题目数据
+     * @param onUpdate 修改后触发的持久化回调
+     */
+    constructor(baseName: string, rawQuestions: any) {
+        this._baseName = baseName;
+        this._questions = this.parseJsonString(JSON.stringify(rawQuestions));
+    }
+    //#endregion Init
+
+    //#region Events
+    // 修改回调：触发数据持久化
+    public readonly onUpdate: Func<() => void> = new Func();
+    //#endregion Events
+
+    //#region API
+    
+
     /** 导入多题（批量添加） */
-    public async importQuestions(questions: string): Promise<boolean> {
+    public importQuestions(questions: string) {
         this._questions = this._questions.concat(this.parseJsonString(questions));
-        this.onQuestionListUpdated.invoke();
-        return await this.onUpdate(); // 触发持久化
+        this.onUpdate.invoke();
     }
 
     /** 添加单题 */
-    public async addQuestion(question: Question): Promise<boolean> {
+    public addQuestion(question: Question){
         const existingIndex = this._questions.findIndex(q => q.id === question.id);
 
         if (existingIndex >= 0) {
@@ -85,34 +88,32 @@ export class QuestionBase {
             this._questions.push(question);
         }
 
-        this.onQuestionListUpdated.invoke();
-        return await this.onUpdate();
+        this.onUpdate.invoke();
     }
 
     /** 按ID删除题目 */
-    public async removeQuestionById(questionId: string): Promise<boolean> {
+    public removeQuestionById(questionId: string){
         const initialLength = this._questions.length;
         this._questions = this._questions.filter(q => q.id !== questionId);
         const isRemoved = this._questions.length < initialLength;
         if (isRemoved) {
-            this.onQuestionListUpdated.invoke();
-            return await this.onUpdate(); // 仅删除成功时触发持久化
+            this.onUpdate.invoke();
         }
-        return false;
+        else {
+            console.log(`[QuestionBase] ${this.baseName} 未找到题目 ID: ${questionId}`);
+        }
     }
 
     /** 修改题库名称（内置，操作后触发持久化） */
-    public async rename(newName: string): Promise<boolean> {
+    public rename(newName: string){
         this._baseName = newName;
-        return await this.onUpdate(); // 触发持久化
+        this.onUpdate.invoke();
     }
 
-    // 供Manager序列化使用的内部方法
     public getRawQuestions(): Question[] {
         return this._questions;
     }
+    //#endregion API
 
-    readonly test = async () => {
-        return await this.onUpdate();
-    }
+
 }

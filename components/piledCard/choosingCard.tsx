@@ -8,7 +8,6 @@ import { useAppTheme } from '../../hooks/Material3ThemeProvider';
 export interface ChoosingCardProps {
   question: ChoiceQuestion;
   onAnswerSubmit?: (isCorrect: boolean, questionId: string, selectedIndex: number) => void;
-  onRenderComplete?: () => void;
 };
 
 const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {

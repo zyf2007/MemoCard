@@ -3,16 +3,24 @@ import { Alert } from "react-native";
 import uuid from 'react-native-uuid';
 import { Func } from "../utils/FuncSystem";
 import { LazySingletonBase } from "../utils/LazySingletonBase";
+import { Question } from "./Question";
 import { QuestionBase } from "./QuestionBase";
 export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> {
-    private readonly STORAGE_KEY = "QuestionBase";
-    // 题库列表：外部只读，内部可写
-    private _questionBases: QuestionBase[] = [];
-    public get questionBases(): QuestionBase[] {
-        return [...this._questionBases];
-    }
 
+
+    //#region Events
     public onQuestionBaseListUpdated: Func<() => void> = new Func<() => void>();
+    public onQuestionUpdated: Func<() => void> = new Func<() => void>();
+
+    private subscribeEvents() {
+        this._questionBases.forEach(base => base.onUpdate.subscribe(this.onQuestionBaseUpdated));
+    }
+    //#endregion Events
+    
+    //#region Init / Persist
+    private readonly STORAGE_KEY = "QuestionBase";
+    private _questionBases: QuestionBase[] = [];
+
     constructor() {
         super();
         this.init();
@@ -21,6 +29,7 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
     // 初始化：读取本地存储的题库数据
     private async init() {
         await this.readData();
+        this.subscribeEvents();
     }
 
     // 读取本地数据
@@ -33,8 +42,7 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
             this._questionBases = rawJson.map((item: any) => {
                 return new QuestionBase(
                     item.baseName,
-                    item.questions,
-                    this.persistData
+                    item.questions
                 );
             });
         } catch (error) {
@@ -43,8 +51,10 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
         }
     }
 
-    // 核心：持久化所有题库数据（private，仅内部/回调调用）
-    public persistData = (async (): Promise<boolean> => {
+    // 旗下管理的题库更新时
+    public onQuestionBaseUpdated = (async (): Promise<boolean> => {
+        this.onQuestionUpdated.invoke();
+        // 持久化所有题库数据
         try {
             const serializableData = this._questionBases.map(base => ({
                 baseName: base.baseName,
@@ -57,7 +67,16 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
             return false;
         }
     });
+    //#endregion Init
 
+    //#region API
+    
+    public getAllQuestionBases(): QuestionBase[] {
+        return [...this._questionBases];
+    }
+    public get questionBases(): QuestionBase[] {
+        return [...this._questionBases];
+    }
     /** 获取所有题库名称 */
     public getQuestionBaseNames(): string[] {
         return this._questionBases.map(item => item.baseName);
@@ -78,15 +97,15 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
         // 给新题库绑定onUpdate回调（指向Manager的persistData）
         const newQuestionBase = new QuestionBase(
             baseName,
-            [],
-            this.persistData
+            []
         );
+        newQuestionBase.onUpdate.subscribe(this.onQuestionBaseUpdated);
         this._questionBases.push(newQuestionBase);
         // 触发列表更新回调
         this.onQuestionBaseListUpdated.invoke();
 
         // 创建后立即持久化
-        return await this.persistData();
+        return await this.onQuestionBaseUpdated();
     }
 
     /** 删除整个题库 */
@@ -98,7 +117,7 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
         if (isDeleted) {
             // 删除成功则触发列表更新回调
             this.onQuestionBaseListUpdated.invoke();
-            return await this.persistData(); // 删除成功则持久化
+            return await this.onQuestionBaseUpdated(); // 删除成功则持久化
         }
         Alert.alert("警告", `未找到名称为「${baseName}」的题库`);
         return false;
@@ -124,6 +143,9 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
 
     public hasQuestionBase(baseName: string): boolean {
         return this.getQuestionBaseByName(baseName) !== undefined;
+    }
+    public getAllQuestions(): Question[] {
+        return this._questionBases.flatMap(base => base.getRawQuestions());
     }
 
 
@@ -236,13 +258,13 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
             const newQuestionBase = new QuestionBase(
                 baseName,
                 validatedQuestions,
-                this.persistData
             );
+            newQuestionBase.onUpdate.subscribe(this.onQuestionBaseUpdated);
             this._questionBases.push(newQuestionBase);
 
             // 7. 触发回调和持久化
             this.onQuestionBaseListUpdated.invoke();
-            const persistResult = await this.persistData();
+            const persistResult = await this.onQuestionBaseUpdated();
 
             if (persistResult) {
                 const successCount = validatedQuestions.length;
@@ -258,4 +280,5 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
             return false;
         }
     }
+    //#endregion API
 }

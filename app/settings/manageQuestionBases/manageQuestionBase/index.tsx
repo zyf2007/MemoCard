@@ -55,7 +55,7 @@ export default function ImportQuestionBase() {
   // 初始化和订阅 [题库更新→刷新列表] 事件
   React.useEffect(() => {
     refreshQuestionList();
-    const unsubscribe = questionBase?.onQuestionListUpdated.subscribe(refreshQuestionList);
+    const unsubscribe = questionBase?.onUpdate.subscribe(refreshQuestionList);
     return () => {
       console.log('[QuestionBaseManage] Backend unsubscribed');
       unsubscribe?.();

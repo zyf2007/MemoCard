@@ -1,5 +1,6 @@
-import { ChoiceQuestion, Question } from '@/scripts/questions';
-import React, { useCallback, useRef, useState } from 'react';
+import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
+import { ChoiceQuestion } from '@/scripts/questions';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, {
@@ -13,15 +14,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
 import ChoosingCard, { ChoosingCardRef } from './choosingCard';
+import FillingCard from './FillingCard';
 
 const { width, height } = Dimensions.get('window');
 const THRESHOLD = width * 0.3;
 const SWIPE_OUT_DURATION = 200;
 
-interface PiledCardProps {
-  getQuestion: (index: number) => Question | null;
-  onAnswerSubmit?: (isCorrect: boolean, questionId: string, selectedIndex: number) => void;
-}
+
 
 /**
  * 单个卡片组件：根据相对索引计算动画
@@ -101,20 +100,33 @@ function IndividualCard({
 
   return (
     <Animated.View style={[cardStyles.card, style]}>
-      <ChoosingCard ref={cardRef} question={question} onAnswerSubmit={onAnswerSubmit} />
+      {question.type === 'choice' ? (
+        <ChoosingCard ref={cardRef} question={question} onAnswerSubmit={onAnswerSubmit} />
+      ) :
+      (
+        <FillingCard question={question} onAnswerSubmit={onAnswerSubmit} />
+      )
+      }
     </Animated.View>
   );
 
 }
 
-export default function PiledCard(props: Readonly<PiledCardProps>) {
+export default function PiledCard() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const theme = useAppTheme();
   const currentIndexSv = useSharedValue(0);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
-
+  const maxIndex = useSharedValue(QuestionGenerator.getInstance().getAvailableQuestionCount() - 1);
+  useEffect(() => {
+    return QuestionGenerator.getInstance().onQuestionCountChanged.subscribe((count) => {
+      maxIndex.value = count - 1;
+      currentIndexSv.value = 0;
+      setCurrentIndex(0);
+    });
+  }, []);
   const updateIndex = useCallback((step: number) => {
     currentIndexSv.value = currentIndexSv.value + step;
     translateX.value = 0;
@@ -139,21 +151,31 @@ export default function PiledCard(props: Readonly<PiledCardProps>) {
       const projectedX = translationX + velocityX * 0.2;
       // ←
       if (projectedX < -THRESHOLD && projectedX > 0 === velocityX > 0) {
-        translateX.value = withTiming(-width, { duration: SWIPE_OUT_DURATION }, (finished) => {
+        if (currentIndex < maxIndex.value) {
+          translateX.value = withTiming(-width, { duration: SWIPE_OUT_DURATION }, (finished) => {
           if (finished) runOnJS(updateIndex)(1);
         });
+        }
+        // 到达最右侧
+        else {
+          translateX.value = withSpring(0);
+        }
       }
       // →
       else if (projectedX > THRESHOLD && projectedX > 0 === velocityX > 0) {
-        if (currentIndex > 0) {
+        if (currentIndex > 0 ) {
           translateX.value = withTiming(width, { duration: SWIPE_OUT_DURATION }, (finished) => {
             if (finished) runOnJS(updateIndex)(-1);
           });
           translateY.value = withTiming(0, { duration: SWIPE_OUT_DURATION });
-        } else {
+        }
+        // 到达最左侧
+        else {
           translateX.value = withSpring(0);
         }
-      } else {
+      }
+      // 每达到阈值
+      else {
         translateX.value = withSpring(0);
         translateY.value = withSpring(0);
       }
@@ -167,9 +189,9 @@ export default function PiledCard(props: Readonly<PiledCardProps>) {
         <GestureDetector gesture={panGesture}>
           <View style={styles.wrapper}>
             {questionIndex.map((qIndex) => {
-              const q = props.getQuestion(qIndex);
-              if (!q) return null;
-              // console.log('renderIndices', qIndex, " ", q.id);
+              if(qIndex<0 || qIndex>=QuestionGenerator.getInstance().getAvailableQuestionCount()) return null;
+              const q = QuestionGenerator.getInstance().getQuestion(qIndex);
+
               return (
                 <IndividualCard
                   key={q.id}
@@ -179,7 +201,7 @@ export default function PiledCard(props: Readonly<PiledCardProps>) {
                   translateX={translateX}
                   translateY={translateY}
                   question={q as ChoiceQuestion}
-                  onAnswerSubmit={props.onAnswerSubmit}
+                  onAnswerSubmit={() => { console.log('answerSubmit', qIndex); }}
                   theme={theme}
                 />
               );

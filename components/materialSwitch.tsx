@@ -22,13 +22,13 @@ import Animated, {
 type SwitchProps = {
   switchOn: boolean;
   onPress: () => void;
-  switchOnIcon?: IconSource; // IconSource from 'react-native-paper/lib/typescript/components/Icon'
-  switchOffIcon?: IconSource; // IconSource from 'react-native-paper/lib/typescript/components/Icon'
+  switchOnIcon?: IconSource;
+  switchOffIcon?: IconSource;
   disabled?: boolean;
   animDuration?: number;
 };
 
-export const MaterialSwitch = ({
+export const Material3Switch = ({
   switchOn,
   onPress,
   switchOnIcon,
@@ -41,19 +41,15 @@ export const MaterialSwitch = ({
   const handleHeight = useSharedValue(switchOn ? 24 : 16);
   const handleWidth = useSharedValue(switchOn ? 24 : 16);
   const [active, setActive] = useState(switchOn);
-  const [isPressed, setIsPressed] = useState(false);
   const pan = Gesture.Pan()
     .activateAfterLongPress(100)
-    .onTouchesUp(() => setIsPressed(false))
     .runOnJS(true)
     .hitSlop(disabled ? -30 : 0)
     .onStart(() => {
-      setIsPressed(true);
       handleHeight.value = withTiming(28, { duration: 160 });
       handleWidth.value = withTiming(28, { duration: 160 });
     })
     .onEnd(() => {
-      setIsPressed(false);
       position.value = withTiming(switchOn ? 10 : -10, { duration: animDuration });
       handleHeight.value = withTiming(switchOn ? 24 : 16, { duration: animDuration });
       handleWidth.value = withTiming(switchOn ? 24 : 16, { duration: animDuration });
@@ -131,7 +127,6 @@ export const MaterialSwitch = ({
 
   const callbackFunction = () => {
     onSwitchPress();
-    setIsPressed(false);
   };
   const iconOnStyle = useAnimatedStyle(() => ({
     opacity: disabled
@@ -152,7 +147,8 @@ export const MaterialSwitch = ({
       },
     ],
   }));
-  const iconOffStyle = useAnimatedStyle(() => ({
+  const iconOffStyle = useAnimatedStyle(() => {
+    return({
     position: 'absolute',
     opacity: disabled
       ? 0.38
@@ -172,7 +168,7 @@ export const MaterialSwitch = ({
       },
     ],
     // width: interpolate(position.value, [5, 10], [0, 16]),
-  }));
+  })});
 
   const changeSwitch = (withCallback: boolean) => {
     if (active) {
@@ -255,7 +251,6 @@ export const MaterialSwitch = ({
                 handleWidth.value = withTiming(28, { duration: 100 });
               }}
               onPress={() => {
-                setIsPressed(true);
                 changeSwitch(true);
               }}></Pressable>
           </GestureDetector>

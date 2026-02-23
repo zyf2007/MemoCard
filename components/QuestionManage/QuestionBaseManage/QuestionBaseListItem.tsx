@@ -1,4 +1,4 @@
-import { MaterialSwitch } from '@/components/materialSwitch';
+import { Material3Switch } from '@/components/materialSwitch';
 import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -30,10 +30,6 @@ export const QuestionBaseItem: React.FC<QuestionBaseItemProps> = ({
     } else {
       QuestionGenerator.getInstance().disableQuestionBase(name);
     }
-    setTimeout(() => {
-      console.log('enabledQuestionBaseNames', QuestionGenerator.getInstance().getEnabledQuestionBaseNames());
-      console.log('isSwitchOn', isSwitchOn);
-    }, 500);
   }, [isSwitchOn, name]);
   return (
     <List.Item
@@ -62,8 +58,9 @@ export const QuestionBaseItem: React.FC<QuestionBaseItemProps> = ({
             icon="file-remove"
             mode="contained"
             onPress={onDeletePress}
+            
           />
-          <MaterialSwitch switchOn={isSwitchOn} onPress={onToggleSwitch} />
+          <Material3Switch switchOn={isSwitchOn} onPress={onToggleSwitch} switchOnIcon="check"  />
         </View>
       )}
     />
