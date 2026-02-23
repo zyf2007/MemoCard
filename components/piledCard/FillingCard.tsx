@@ -7,7 +7,7 @@ import { useAppTheme } from '../../hooks/Material3ThemeProvider';
 
 export interface FillingCardProps {
   question: FillingQuestion;
-  onAnswerSubmit?: (isCorrect: boolean, questionId: string, answer: string) => void;
+  onAnswerSubmit?: (isCorrect: boolean, questionId: string) => void;
 };
 
 const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
@@ -33,7 +33,7 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
     setShowResult(true);
     if (props.onAnswerSubmit) {
       const isCorrect = userAnswer.trim().toLowerCase() === props.question.correctAnswer.toLowerCase();
-      props.onAnswerSubmit(isCorrect, props.question.id, userAnswer.trim());
+      props.onAnswerSubmit(isCorrect, props.question.id);
     }
   };
 

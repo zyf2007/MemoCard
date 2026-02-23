@@ -7,7 +7,7 @@ import { useAppTheme } from '../../hooks/Material3ThemeProvider';
 
 export interface ChoosingCardProps {
   question: ChoiceQuestion;
-  onAnswerSubmit?: (isCorrect: boolean, questionId: string, selectedIndex: number) => void;
+  onAnswerSubmit?: (isCorrect: boolean, questionId: string) => void;
 };
 
 const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
@@ -31,7 +31,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
     setShowResult(true);
     if (props.onAnswerSubmit) {
       const isCorrect = index === props.question.correctChoiceIndex;
-      props.onAnswerSubmit(isCorrect, props.question.id, index);
+      props.onAnswerSubmit(isCorrect, props.question.id);
     }
   };
 

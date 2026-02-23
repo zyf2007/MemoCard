@@ -42,7 +42,7 @@ export class ChoiceQuestion extends Question {
             data.text as string,
             data.choices as string[],
             data.correctChoiceIndex as number,
-            uuid.v1() as string
+            data.id as string
         );
     }
 }

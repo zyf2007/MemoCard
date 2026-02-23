@@ -41,6 +41,12 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
     //#endregion Event
 
     //#region API
+    // test
+    public resetAllQuestions() {
+        this.config.questionData.clear();
+        console.log("[QuestionGenerator] resetAllQuestions");
+        this.updateAvailableQuestionList();
+    }
 
     public async enableQuestionBase(questionBaseName: string) {
         this.config.enabledQuestionBaseNames.add(questionBaseName);
@@ -67,6 +73,8 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
     }
     public finishQuestion(index: number) {
         this.config.questionData.get(this._availableQuestionsTmp[index].id)!.todayFinished = true;
+        this.persistConfig();
+        console.log("[QuestionGenerator] finishQuestion ", this._availableQuestionsTmp[index].id,this.config.questionData.get(this._availableQuestionsTmp[index].id)!.todayFinished);
     }
     public getAvailableQuestionCount() {
         return this._availableQuestionsTmp.length;
@@ -81,7 +89,7 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
         }
     }
     private readonly _availableQuestionsTmp: Question[] = [];
-    private updateAvailableQuestionList() {
+    public updateAvailableQuestionList() {
         this._availableQuestionsTmp.length = 0;
         this.baseManager.getAllQuestionBases()
             // 过滤出已启用的问题库
@@ -89,7 +97,10 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
             // 拿到所有问题
             .flatMap(base => base.getRawQuestions())
             // 拿到没有记录和今天还没做过的问题
-            .filter(q => { return !(this.config.questionData.has(q.id) && this.config.questionData.get(q.id)!.todayFinished) })
+            .filter(q => {
+                console.log(q.id,this.config.questionData.has(q.id)&& this.config.questionData.get(q.id)!.todayFinished)
+                return !(this.config.questionData.has(q.id) && this.config.questionData.get(q.id)!.todayFinished)
+            })
             // 加入可以抽取的问题列表
             .map(question => { this._availableQuestionsTmp.push(question); return question; })
             // 在config中存入做题记录

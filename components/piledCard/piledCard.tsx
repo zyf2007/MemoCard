@@ -1,12 +1,14 @@
 import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
-import { ChoiceQuestion } from '@/scripts/questions';
+import { ChoiceQuestion, FillingQuestion, Question } from '@/scripts/questions';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Button } from 'react-native-paper';
 import Animated, {
   Extrapolation,
   interpolate,
   runOnJS,
+  SharedValue,
   useAnimatedStyle,
   useSharedValue,
   withSpring,
@@ -34,11 +36,21 @@ function IndividualCard({
   question,
   onAnswerSubmit,
   theme
-}: any) {
+}: {
+  index: number,
+  currentIndexSv: SharedValue<number>,
+  currentIndex: number,
+  translateX: SharedValue<number>,
+  translateY: SharedValue<number>,
+  question: Question,
+  onAnswerSubmit: ((isCorrect: boolean, questionId: string) => void),
+  theme:any
+})
+{
   const cardRef = useRef<ChoosingCardRef>(null);
-      if(index - currentIndex === 1) {
-      cardRef.current?.Reset();
-    }
+  if (index - currentIndex === 1) {
+    cardRef.current?.Reset();
+  }
   const style = useAnimatedStyle(() => {
     const relIndex = index - currentIndexSv.value;
 
@@ -101,11 +113,11 @@ function IndividualCard({
   return (
     <Animated.View style={[cardStyles.card, style]}>
       {question.type === 'choice' ? (
-        <ChoosingCard ref={cardRef} question={question} onAnswerSubmit={onAnswerSubmit} />
-      ) :
-      (
-        <FillingCard question={question} onAnswerSubmit={onAnswerSubmit} />
-      )
+        <ChoosingCard ref={cardRef} question={question as ChoiceQuestion} onAnswerSubmit={onAnswerSubmit} />
+      ) : question.type === 'filling'?
+        (
+          <FillingCard question={question as FillingQuestion} onAnswerSubmit={onAnswerSubmit} />
+        ):(<></>)
       }
     </Animated.View>
   );
@@ -119,10 +131,10 @@ export default function PiledCard() {
   const currentIndexSv = useSharedValue(0);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
-  const maxIndex = useSharedValue(QuestionGenerator.getInstance().getAvailableQuestionCount() - 1);
+  const [maxIndex, setMaxIndex] = useState(QuestionGenerator.getInstance().getAvailableQuestionCount() - 1);
   useEffect(() => {
     return QuestionGenerator.getInstance().onQuestionCountChanged.subscribe((count) => {
-      maxIndex.value = count - 1;
+      setMaxIndex(count - 1);
       currentIndexSv.value = 0;
       setCurrentIndex(0);
     });
@@ -151,10 +163,10 @@ export default function PiledCard() {
       const projectedX = translationX + velocityX * 0.2;
       // ←
       if (projectedX < -THRESHOLD && projectedX > 0 === velocityX > 0) {
-        if (currentIndex < maxIndex.value) {
+        if (currentIndex < maxIndex) {
           translateX.value = withTiming(-width, { duration: SWIPE_OUT_DURATION }, (finished) => {
-          if (finished) runOnJS(updateIndex)(1);
-        });
+            if (finished) runOnJS(updateIndex)(1);
+          });
         }
         // 到达最右侧
         else {
@@ -163,7 +175,7 @@ export default function PiledCard() {
       }
       // →
       else if (projectedX > THRESHOLD && projectedX > 0 === velocityX > 0) {
-        if (currentIndex > 0 ) {
+        if (currentIndex > 0) {
           translateX.value = withTiming(width, { duration: SWIPE_OUT_DURATION }, (finished) => {
             if (finished) runOnJS(updateIndex)(-1);
           });
@@ -182,26 +194,34 @@ export default function PiledCard() {
     });
 
   const questionIndex = [currentIndex - 1, currentIndex, currentIndex + 1];
-
+  const [dialogId, setDialogId] = useState(0);
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={{ backgroundColor: theme.colors.background, flex: 1 }}>
         <GestureDetector gesture={panGesture}>
           <View style={styles.wrapper}>
             {questionIndex.map((qIndex) => {
-              if(qIndex<0 || qIndex>=QuestionGenerator.getInstance().getAvailableQuestionCount()) return null;
+              if (qIndex < 0 || qIndex >= maxIndex) {
+                console.log('No Question, Total: ', maxIndex, ' Current: ', currentIndex);
+                return (
+                <View key={qIndex} style={{position: 'absolute',}}>
+                    <Button onPress={() => { QuestionGenerator.getInstance().updateAvailableQuestionList(); setDialogId(dialogId + 1); }}>
+                      {maxIndex>0? '重做今日错题' : '今日已完成所有题！'}
+                    </Button>
+                </View>);
+              }
               const q = QuestionGenerator.getInstance().getQuestion(qIndex);
 
               return (
                 <IndividualCard
-                  key={q.id}
+                  key={q.id + dialogId}
                   index={qIndex}
                   currentIndexSv={currentIndexSv}
                   currentIndex={currentIndex}
                   translateX={translateX}
                   translateY={translateY}
                   question={q as ChoiceQuestion}
-                  onAnswerSubmit={() => { console.log('answerSubmit', qIndex); }}
+                  onAnswerSubmit={(isCorrect) => {isCorrect && QuestionGenerator.getInstance().finishQuestion(qIndex); }}
                   theme={theme}
                 />
               );

@@ -20,6 +20,7 @@ export class QuestionGeneratorConfig {
         console.log("[QuestionGeneratorPersisted] FromJson ", json.enabledQuestionBaseNames);
         this.enabledQuestionBaseNames = new Set(json.enabledQuestionBaseNames || []);
         this.questionData = new Map(json.flatQuestionData || []);
+        console.log(this.questionData) 
         this.lastInitTime = json.lastInitTime || new Date().toDateString();
         console.log("[QuestionGeneratorConfig] LoadedFromJson LastInitTime", this.lastInitTime);
         if (new Date().toDateString() !== this.lastInitTime) {
