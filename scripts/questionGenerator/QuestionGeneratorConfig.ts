@@ -13,7 +13,7 @@ export class QuestionConfig{
 
 
 export class QuestionGeneratorConfig {
-    public lastInitTime: string = new Date().toDateString();
+    public lastInitTime: string = "";
     public enabledQuestionBaseNames: Set<string> = new Set();
     public questionData:Map<string,QuestionConfig> = new Map();
     FromJson(json: any) {
@@ -21,22 +21,25 @@ export class QuestionGeneratorConfig {
         this.enabledQuestionBaseNames = new Set(json.enabledQuestionBaseNames || []);
         this.questionData = new Map(json.flatQuestionData || []);
         console.log(this.questionData) 
-        this.lastInitTime = json.lastInitTime || new Date().toDateString();
+        this.lastInitTime = json.lastInitTime;
         console.log("[QuestionGeneratorConfig] LoadedFromJson LastInitTime", this.lastInitTime);
+
         if (new Date().toDateString() !== this.lastInitTime) {
             console.log("[QuestionGeneratorConfig] LastInitTime is not today, reset all questions");
             this.questionData.forEach((value) => {
                 value.todayFinished = false; 
             });
-
-            this.RemoveInvalidQuestions();
+            this.lastInitTime = new Date().toDateString();
         }
+        
+        this.RemoveInvalidQuestions();
     }
 
     ToJson() {
         return {
             enabledQuestionBaseNames: [...this.enabledQuestionBaseNames],
             flatQuestionData: [...this.questionData],
+            lastInitTime: this.lastInitTime,
         };
     }
 
