@@ -221,7 +221,7 @@ export default function PiledCard() {
                   translateX={translateX}
                   translateY={translateY}
                   question={q as ChoiceQuestion}
-                  onAnswerSubmit={(isCorrect) => {isCorrect && QuestionGenerator.getInstance().finishQuestion(qIndex); }}
+                  onAnswerSubmit={(isCorrect) => {isCorrect && QuestionGenerator.getInstance().finishQuestion(qIndex, isCorrect); }}
                   theme={theme}
                 />
               );

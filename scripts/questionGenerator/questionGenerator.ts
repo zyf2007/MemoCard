@@ -29,7 +29,7 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
         await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.config.ToJson()));
     }
 
-    
+
     //#endregion Init / Persist
 
     //#region Event
@@ -71,16 +71,36 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
     public getQuestion(index: number) {
         return this._availableQuestionsTmp[index];
     }
-    public finishQuestion(index: number) {
-        this.config.questionData.get(this._availableQuestionsTmp[index].id)!.todayFinished = true;
+    public finishQuestion(index: number, correct: boolean) {
+        this.config.questionData.get(this._availableQuestionsTmp[index].id)!.todayFinished = correct;
+        if (this.config.questionData.get(this._availableQuestionsTmp[index].id)!.weight > 1 &&
+            this.config.questionData.get(this._availableQuestionsTmp[index].id)!.weight < 10) {
+            if (correct) {
+                this.config.questionData.get(this._availableQuestionsTmp[index].id)!.weight -= 1;
+            } else {
+                this.config.questionData.get(this._availableQuestionsTmp[index].id)!.weight += 1;
+            }
+        }
+
         this.persistConfig();
-        console.log("[QuestionGenerator] finishQuestion ", this._availableQuestionsTmp[index].id,this.config.questionData.get(this._availableQuestionsTmp[index].id)!.todayFinished);
+        console.log("[QuestionGenerator] finishQuestion ", this._availableQuestionsTmp[index].id, this.config.questionData.get(this._availableQuestionsTmp[index].id)!.todayFinished);
     }
     public getAvailableQuestionCount() {
         return this._availableQuestionsTmp.length;
     }
     //#endregion API
-    
+
+    private shuffleQuestionsByWeight(): void {
+        const randomFactor = 1.5;
+        this._availableQuestionsTmp.sort((a, b) => {
+            const weightA = this.config.questionData.get(a.id)!.weight;
+            const weightB = this.config.questionData.get(b.id)!.weight;
+            const scoreA = weightA + (Math.random() - 0.5) * 2 * randomFactor;
+            const scoreB = weightB + (Math.random() - 0.5) * 2 * randomFactor;
+            return scoreB - scoreA;
+        });
+    }
+
     private async verifyQuestionBases() {
         this.config.enabledQuestionBaseNames = new Set([...this.config.enabledQuestionBaseNames].filter((name) => this.baseManager.hasQuestionBase(name)));
         await this.persistConfig();
@@ -98,14 +118,16 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
             .flatMap(base => base.getRawQuestions())
             // 拿到没有记录和今天还没做过的问题
             .filter(q => {
-                console.log(q.id,this.config.questionData.has(q.id)&& this.config.questionData.get(q.id)!.todayFinished)
+                console.log(q.id, this.config.questionData.has(q.id) && this.config.questionData.get(q.id)!.todayFinished)
                 return !(this.config.questionData.has(q.id) && this.config.questionData.get(q.id)!.todayFinished)
             })
             // 加入可以抽取的问题列表
             .map(question => { this._availableQuestionsTmp.push(question); return question; })
             // 在config中存入做题记录
-            .forEach((q) => {if(!this.config.questionData.has(q.id)) this.config.questionData.set(q.id, new QuestionConfig(q.id))});
-        console.log("[QuestionGenerator] updateAvailableQuestionList ", this._availableQuestionsTmp.length,"Question(s)");
+            .forEach((q) => { if (!this.config.questionData.has(q.id)) this.config.questionData.set(q.id, new QuestionConfig(q.id)) });
+        console.log("[QuestionGenerator] updateAvailableQuestionList ", this._availableQuestionsTmp.length, "Question(s)");
+        // 按权重随机排序
+        this.shuffleQuestionsByWeight();
         // console.log("[QuestionGenerator] updateAvailableQuestionConfig ", this.config.questionData);
         this.onQuestionCountChanged.invoke(this._availableQuestionsTmp.length);
         this.persistConfig();
