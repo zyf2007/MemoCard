@@ -1,9 +1,10 @@
 import { FillingQuestion } from "@/scripts/questions/FillingQuestion";
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
-import { KeyboardAvoidingView, StyleSheet, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, StyleSheet, View } from 'react-native';
 import { MathText } from "react-native-latex-text";
 import { Button, Text, TextInput } from 'react-native-paper';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
+import FullQuestionDialog from "./fullQuestionDialog";
 
 export interface FillingCardProps {
     question: FillingQuestion;
@@ -14,6 +15,7 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
     const theme = useAppTheme();
     const [userAnswer, setUserAnswer] = useState<string>(''); // 用户输入的答案
     const [showResult, setShowResult] = useState<boolean>(false); // 是否显示答题结果
+    const [fullQuestionDialogVisible, setFullQuestionDialogVisible] = useState<boolean>(false);
 
     const Reset = () => {
         setUserAnswer('');
@@ -94,15 +96,17 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
                 <View style={{ margin: 20, marginBottom: 0, flexDirection: "row", justifyContent: "space-between" }} >
                     <Text variant='titleMedium' style={{ color: theme.colors.primary }} >填空题</Text>
                 </View>
-
                 {/* 题目文本 */}
-                <View style={{ margin: 20, marginTop: 15, justifyContent: "space-between" }} >
+                <Pressable
+                    style={{ margin: 20, marginTop: 15, justifyContent: "space-between" }}
+                    onPress={() => setFullQuestionDialogVisible(true)}
+                >
                     <MathText
                         content={props.question.text}
                         textColor={theme.colors.onSurface}
                         baseMathSize={9}
                     />
-                </View>
+                </Pressable>
 
                 {/* 答案输入区域 */}
                 <KeyboardAvoidingView behavior='padding' style={styleSheet.inputContainer}>
@@ -162,6 +166,12 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
                     </>
                 )}
             </View>
+                    <FullQuestionDialog
+          question={props.question}
+          theme={theme}
+          visible={fullQuestionDialogVisible}
+          onDismiss={() => setFullQuestionDialogVisible(false)}
+        />
         </View>
     );
 });

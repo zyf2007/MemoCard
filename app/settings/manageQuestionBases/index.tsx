@@ -37,7 +37,7 @@ export default function ManageQuestionBases() {
     return (
         <Material3ThemeProvider>
             <View style={{ backgroundColor: theme.colors.surfaceContainer, flex: 1 }}>
-                <ScrollView>
+                <ScrollView >
                     {Array.isArray(questionBaseList) &&
                         (questionBaseList.length === 0 ?
                             (

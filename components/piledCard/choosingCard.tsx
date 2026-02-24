@@ -1,9 +1,10 @@
 import { ChoiceQuestion } from "@/scripts/questions/ChoiceQuestion";
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { MathText } from "react-native-latex-text";
 import { Button, Text } from 'react-native-paper';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
+import FullQuestionDialog from "./fullQuestionDialog";
 
 export interface ChoosingCardProps {
   question: ChoiceQuestion;
@@ -14,7 +15,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
   const theme = useAppTheme();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // 用户选择的选项索引
   const [showResult, setShowResult] = useState<boolean>(false); // 是否显示答题结果
-
+  const [fullQuestionDialogVisible, setFullQuestionDialogVisible] = useState<boolean>(false);
   const Reset = () => {
     setSelectedIndex(null);
     setShowResult(false);
@@ -72,7 +73,6 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
 
   const styleSheet = StyleSheet.create({
     option: {
-      flex: 1,
       margin: 4,
       justifyContent: 'center',
       borderRadius: 14,
@@ -94,7 +94,6 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
     optionColumn: {
       flexDirection: 'column',
       gap: 4,
-      justifyContent: 'flex-end',
     }
   });
 
@@ -107,25 +106,27 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
   ];
 
   return (
-    <View style={{ flex: 1, justifyContent: 'space-between', position: 'relative' }}>
+    <View style={{ flex: 1 }}>
       <View>
         {/* 题型标题 */}
-        <View style={{ margin: 20, marginBottom: 0, flexDirection: "row", justifyContent: "space-between" }} >
+        <View style={{ margin: 20, marginBottom: 0, flexDirection: "row" }} >
           <Text variant='titleMedium' style={{ color: theme.colors.primary }} >单选题</Text>
         </View>
-
-        {/* 题目文本 */}
-        <View style={{ margin: 20, marginTop: 15, justifyContent: "space-between" }} >
-
-          <MathText
-            content={props.question.text}
-            textColor={theme.colors.onSurface}
-            baseMathSize={9}
-          />
-        </View>
       </View>
+
+      {/* 题目文本 */}
+      <Pressable
+        style={{ margin: 20, marginTop: 15, flex: 1 ,minHeight:0,overflow:'hidden'}}
+        onPress={() => setFullQuestionDialogVisible(true)}
+      >
+        <MathText
+          content={props.question.text}
+          textColor={theme.colors.onSurface}
+          baseMathSize={9}
+        />
+      </Pressable>
       {/* 选项按钮 */}
-      <View style={{ margin: 16, position: 'absolute', bottom: 0, left: 0, right: 0 }}>
+      <View style={{ margin: 16, marginTop: 0  }}>
         {isSingleColumn ? (
           // 单列显示：一行一个按钮
           <View style={styleSheet.optionColumn}>
@@ -137,14 +138,14 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
                 onPress={() => handleOptionPress(option.index)}
                 disabled={showResult}
                 aria-label={`option${option.label}`}
-                contentStyle={{right: 8}}
+                contentStyle={{ right: 8 }}
               >
                 <MathText
                   content={option.text}
                   textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
                   baseMathSize={9}
                   viewStyle={{ width: '100%' }}
-                  lineStyle={{ justifyContent: 'center'}}
+                  lineStyle={{ justifyContent: 'center' }}
                 />
               </Button>
             ))}
@@ -161,11 +162,11 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
                     <Button
                       key={`option-${option.index}`}
                       mode="contained"
-                      style={getOptionButtonStyle(option.index)}
+                      style={[getOptionButtonStyle(option.index), {flex:1}]}
                       onPress={() => handleOptionPress(option.index)}
                       disabled={showResult}
                       aria-label={`option${option.label}`}
-                      contentStyle={{right: 4}}
+                      contentStyle={{ right: 4 }}
                     >
                       <MathText
                         content={option.text}
@@ -194,7 +195,12 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
           </Text>
         )}
       </View>
-
+        <FullQuestionDialog
+          question={props.question}
+          theme={theme}
+          visible={fullQuestionDialogVisible}
+          onDismiss={() => setFullQuestionDialogVisible(false)}
+        />
     </View>
   );
 })

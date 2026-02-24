@@ -191,7 +191,7 @@ export default function PiledCard() {
         translateX.value = withSpring(0);
         translateY.value = withSpring(0);
       }
-    });
+    }).simultaneousWithExternalGesture();
 
   const questionIndex = [currentIndex - 1, currentIndex, currentIndex + 1];
   const [dialogId, setDialogId] = useState(0);
