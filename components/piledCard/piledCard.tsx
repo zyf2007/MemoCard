@@ -131,10 +131,10 @@ export default function PiledCard() {
   const currentIndexSv = useSharedValue(0);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
-  const [maxIndex, setMaxIndex] = useState(QuestionGenerator.getInstance().getAvailableQuestionCount() - 1);
+  const [maxIndex, setMaxIndex] = useState(QuestionGenerator.getInstance().getAvailableQuestionCount());
   useEffect(() => {
     return QuestionGenerator.getInstance().onQuestionCountChanged.subscribe((count) => {
-      setMaxIndex(count - 1);
+      setMaxIndex(count);
       currentIndexSv.value = 0;
       setCurrentIndex(0);
     });

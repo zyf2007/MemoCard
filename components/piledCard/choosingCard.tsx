@@ -65,20 +65,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
   };
 
 
-  const renderOptionContent = (text: string, optionIndex: number) => {
-    return (
 
-      <MathText
-        content={text}
-        textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
-        baseMathSize={9}
-        mathStyle={{
-          height: 20,           // 明确高度
-        }}
-      />
-
-    );
-  };
 
   // 判断是否需要单列显示（任意选项文本长度超过5个字符）
   const isSingleColumn = props.question.choices.some(choice => choice.length > 5);
@@ -90,6 +77,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
       justifyContent: 'center',
       borderRadius: 14,
       minHeight: 40,
+      width: '100%',
     },
     resultText: {
       marginTop: 10,
@@ -119,7 +107,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
   ];
 
   return (
-    <View style={{ flex: 1, justifyContent: 'space-between' }}>
+    <View style={{ flex: 1, justifyContent: 'space-between', position: 'relative' }}>
       <View>
         {/* 题型标题 */}
         <View style={{ margin: 20, marginBottom: 0, flexDirection: "row", justifyContent: "space-between" }} >
@@ -129,15 +117,15 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
         {/* 题目文本 */}
         <View style={{ margin: 20, marginTop: 15, justifyContent: "space-between" }} >
 
-                <MathText
-        content={props.question.text}
-        textColor={theme.colors.onSurface}
+          <MathText
+            content={props.question.text}
+            textColor={theme.colors.onSurface}
             baseMathSize={9}
-      />
+          />
         </View>
       </View>
       {/* 选项按钮 */}
-      <View style={{ margin: 16, flex: 1, justifyContent: 'flex-end' }}>
+      <View style={{ margin: 16, position: 'absolute', bottom: 0, left: 0, right: 0 }}>
         {isSingleColumn ? (
           // 单列显示：一行一个按钮
           <View style={styleSheet.optionColumn}>
@@ -149,8 +137,15 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
                 onPress={() => handleOptionPress(option.index)}
                 disabled={showResult}
                 aria-label={`option${option.label}`}
+                contentStyle={{right: 8}}
               >
-                {renderOptionContent(option.text, option.index)}
+                <MathText
+                  content={option.text}
+                  textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
+                  baseMathSize={9}
+                  viewStyle={{ width: '100%' }}
+                  lineStyle={{ justifyContent: 'center'}}
+                />
               </Button>
             ))}
           </View>
@@ -167,12 +162,18 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
                       key={`option-${option.index}`}
                       mode="contained"
                       style={getOptionButtonStyle(option.index)}
-                      labelStyle={{ fontSize: 23 }}
                       onPress={() => handleOptionPress(option.index)}
                       disabled={showResult}
                       aria-label={`option${option.label}`}
+                      contentStyle={{right: 4}}
                     >
-                      {renderOptionContent(option.text, option.index)}
+                      <MathText
+                        content={option.text}
+                        textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
+                        baseMathSize={9}
+                        viewStyle={{ width: '100%' }}
+                        lineStyle={{ justifyContent: 'center' }}
+                      />
                     </Button>
                   );
                 })}

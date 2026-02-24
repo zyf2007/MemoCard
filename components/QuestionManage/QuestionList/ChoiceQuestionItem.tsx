@@ -53,9 +53,6 @@ export const ChoiceQuestionItem: React.FC<ChoiceQuestionItemProps> = ({
           content={choice || '无此选项'}
           textColor={theme.colors.onSurface}
           baseMathSize={8}
-          mathStyle={{
-              height: 25,           // 明确高度
-          }}
         /></View>
       
     );
