@@ -2,7 +2,7 @@ import { ChoiceQuestion } from "@/scripts/questions/ChoiceQuestion";
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { MathText } from "react-native-latex-text";
-import { Button, Text } from 'react-native-paper';
+import { Text } from 'react-native-paper';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
 import FullQuestionDialog from "./fullQuestionDialog";
 
@@ -131,23 +131,20 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
           // 单列显示：一行一个按钮
           <View style={styleSheet.optionColumn}>
             {options.map(option => (
-              <Button
+              <Pressable
                 key={`option-${option.index}`}
-                mode="contained"
-                style={[getOptionButtonStyle(option.index)]}
+                style={[getOptionButtonStyle(option.index),{right:4}]}
                 onPress={() => handleOptionPress(option.index)}
                 disabled={showResult}
-                aria-label={`option${option.label}`}
-                contentStyle={{ right: 8 }}
               >
                 <MathText
                   content={option.text}
-                  textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
+                  textColor={theme.colors.background}
                   baseMathSize={9}
                   viewStyle={{ width: '100%' }}
                   lineStyle={{ justifyContent: 'center' }}
                 />
-              </Button>
+              </Pressable>
             ))}
           </View>
         ) : (
@@ -159,23 +156,21 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
                   const optionIdx = rowIndex * 2 + colIndex;
                   const option = options[optionIdx];
                   return (
-                    <Button
+
+                    <Pressable
                       key={`option-${option.index}`}
-                      mode="contained"
                       style={[getOptionButtonStyle(option.index), {flex:1}]}
                       onPress={() => handleOptionPress(option.index)}
                       disabled={showResult}
-                      aria-label={`option${option.label}`}
-                      contentStyle={{ right: 4 }}
                     >
                       <MathText
                         content={option.text}
-                        textColor={theme.dark ? theme.colors.background : theme.colors.onSurfaceVariant}
+                        textColor={theme.colors.background}
                         baseMathSize={9}
                         viewStyle={{ width: '100%' }}
                         lineStyle={{ justifyContent: 'center' }}
                       />
-                    </Button>
+                    </Pressable>
                   );
                 })}
               </View>
