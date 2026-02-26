@@ -130,9 +130,9 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
       >
         <View onLayout={(e) => setQuestionTextHeight(e.nativeEvent.layout.height)}>
         <MathText
-          content={props.question.text+inQuestionChoices}
+          content={String.raw`${props.question.text+inQuestionChoices}\n `}
           textColor={theme.colors.onSurface}
-          baseMathSize={9}
+            baseMathSize={9}
           />
           </View>
       </Pressable>

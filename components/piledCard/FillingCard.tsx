@@ -16,7 +16,8 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
     const [userAnswer, setUserAnswer] = useState<string>(''); // 用户输入的答案
     const [showResult, setShowResult] = useState<boolean>(false); // 是否显示答题结果
     const [fullQuestionDialogVisible, setFullQuestionDialogVisible] = useState<boolean>(false);
-
+    const [questionTextHeight, setQuestionTextHeight] = useState<number>(0);
+    const [questionAreaHeight, setQuestionAreaHeight] = useState<number>(0);
     const Reset = () => {
         setUserAnswer('');
         setShowResult(false);
@@ -60,17 +61,13 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
     };
 
     const styleSheet = StyleSheet.create({
-        inputContainer: {
-            marginHorizontal: 20,
-            marginTop: 20,
-        },
         input: {
             fontSize: 18,
             backgroundColor: getInputBgColor(),
         },
         submitButton: {
-            marginHorizontal: 20,
-            marginTop: 16,
+            marginHorizontal: 15,
+            marginTop: 10,
             borderRadius: 14,
             paddingVertical: 6,
         },
@@ -91,48 +88,49 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
 
     return (
         <View style={{ flex: 1, justifyContent: 'space-between' }}>
-            <View>
-                {/* 题型标题 */}
-                <View style={{ margin: 20, marginBottom: 0, flexDirection: "row", justifyContent: "space-between" }} >
-                    <Text variant='titleMedium' style={{ color: theme.colors.primary }} >填空题</Text>
-                </View>
-                {/* 题目文本 */}
-                <Pressable
-                    style={{ margin: 20, marginTop: 15, justifyContent: "space-between" }}
-                    onPress={() => setFullQuestionDialogVisible(true)}
-                >
+
+            {/* 题型标题 */}
+            <View style={{ margin: 20, marginBottom: 0, flexDirection: "row", justifyContent: "space-between" }} >
+                <Text variant='titleMedium' style={{ color: theme.colors.primary }} >填空题</Text>
+            </View>
+            {/* 题目文本 */}
+            <View style={{ margin: 20, marginTop: 10, marginBottom: 15, justifyContent: "space-between", flex: 1, overflow: "hidden" }} onLayout={(e) => setQuestionAreaHeight(e.nativeEvent.layout.height)}>
+                <Pressable onPress={() => setFullQuestionDialogVisible(true)} onLayout={(e) => setQuestionTextHeight(e.nativeEvent.layout.height)}>
                     <MathText
                         content={props.question.text}
                         textColor={theme.colors.onSurface}
                         baseMathSize={9}
                     />
                 </Pressable>
-
-                {/* 答案输入区域 */}
-                <KeyboardAvoidingView behavior='padding' style={styleSheet.inputContainer}>
-                    <TextInput
-                        mode="outlined"
-                        label="请输入答案"
-                        value={userAnswer}
-                        onChangeText={setUserAnswer}
-                        style={styleSheet.input}
-                        activeOutlineColor={getInputBorderColor()}
-                        disabled={showResult}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        right={showResult ? (
-                            userAnswer.trim().toLowerCase() === props.question.correctAnswer.toLowerCase() ? (
-                                <TextInput.Icon icon="check-circle" color="#228B22" />
-                            ) : (
-                                <TextInput.Icon icon="close-circle" color={theme.colors.error} />
-                            )
-                        ) : undefined}
-                    />
-                </KeyboardAvoidingView>
             </View>
+                        {/* 题目文本展开提示 */}
+            {questionAreaHeight < questionTextHeight ? <Text style={{ alignSelf: 'center', marginTop: -16, marginBottom: 10, color: theme.colors.secondary }}>↑点击题目查看完整题目↑</Text> : null}
+
+            {/* 答案输入区域 */}
+            <KeyboardAvoidingView behavior='padding' style={{ marginHorizontal: 20 }}>
+                <TextInput
+                    mode="outlined"
+                    label="请输入答案"
+                    value={userAnswer}
+                    onChangeText={setUserAnswer}
+                    style={styleSheet.input}
+                    activeOutlineColor={getInputBorderColor()}
+                    disabled={showResult}
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    right={showResult ? (
+                        userAnswer.trim().toLowerCase() === props.question.correctAnswer.toLowerCase() ? (
+                            <TextInput.Icon icon="check-circle" color="#228B22" />
+                        ) : (
+                            <TextInput.Icon icon="close-circle" color={theme.colors.error} />
+                        )
+                    ) : undefined}
+                />
+            </KeyboardAvoidingView>
+
 
             {/* 底部区域：提交按钮和结果 */}
-            <View style={{ margin: 16, flex: 1, justifyContent: 'flex-end' }}>
+            <View style={{ margin: 20, marginTop: 7, justifyContent: 'flex-end' }}>
                 {!showResult ? (
                     <Button
                         mode="contained"
@@ -166,12 +164,12 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
                     </>
                 )}
             </View>
-                    <FullQuestionDialog
-          question={props.question}
-          theme={theme}
-          visible={fullQuestionDialogVisible}
-          onDismiss={() => setFullQuestionDialogVisible(false)}
-        />
+            <FullQuestionDialog
+                question={props.question}
+                theme={theme}
+                visible={fullQuestionDialogVisible}
+                onDismiss={() => setFullQuestionDialogVisible(false)}
+            />
         </View>
     );
 });

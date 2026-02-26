@@ -1,4 +1,4 @@
-import { Text, View } from 'react-native';
+import { View } from 'react-native';
 
 import PiledCard from '@/components/piledCard/piledCard';
 import FadeInTab from '@/components/ui/FadeInTab';
@@ -16,7 +16,6 @@ export default function HomeScreen() {
   return (
     <FadeInTab>
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Text>Hello World!</Text>
         <Button onPress={() => QuestionGenerator.getInstance().resetAllQuestions()}
         style={{
           margin: 30,
