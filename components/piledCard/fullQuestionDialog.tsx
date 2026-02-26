@@ -1,4 +1,4 @@
-import { Question } from "@/scripts/questions";
+import { ChoiceQuestion, Question } from "@/scripts/questions";
 import { Material3Scheme } from "@pchmn/expo-material3-theme";
 import { ScrollView } from "react-native";
 import { MathText } from "react-native-latex-text";
@@ -18,7 +18,14 @@ const FullQuestionDialog: React.FC<FullQuestionDialogProps> = ({
     visible,
     onDismiss,
 }) => {
+    // 生成选项文本
+    const isQuestionChoices = question.type === "choice"?
+    String.raw`\n \n选项：\n` + (question as ChoiceQuestion).choices.map((option,index) => {
+    return `${String.fromCodePoint(65 + index)}. ${option}`;
+    }).join(String.raw`\n`) : "";
+    
     return (
+        
         <Portal>
             <Dialog
                 visible={visible}
@@ -29,7 +36,7 @@ const FullQuestionDialog: React.FC<FullQuestionDialogProps> = ({
                 <Dialog.Content>
                     <ScrollView style={{ maxHeight: 400 }}>
                         <MathText
-                            content={question.text}
+                            content={question.text+isQuestionChoices}
                             textColor={theme.colors.onSurface}
                             baseMathSize={9}
                         />

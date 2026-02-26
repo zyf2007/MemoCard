@@ -10,12 +10,14 @@ export interface ChoosingCardProps {
   question: ChoiceQuestion;
   onAnswerSubmit?: (isCorrect: boolean, questionId: string) => void;
 };
-
+type choiceMode = 'singleCol' | 'multiCol' | 'inQuestion';
 const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
   const theme = useAppTheme();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null); // 用户选择的选项索引
   const [showResult, setShowResult] = useState<boolean>(false); // 是否显示答题结果
   const [fullQuestionDialogVisible, setFullQuestionDialogVisible] = useState<boolean>(false);
+  const [questionTextHeight, setQuestionTextHeight] = useState<number>(0);
+  const [questionAreaHeight, setQuestionAreaHeight] = useState<number>(0);
   const Reset = () => {
     setSelectedIndex(null);
     setShowResult(false);
@@ -68,9 +70,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
 
 
 
-  // 判断是否需要单列显示（任意选项文本长度超过5个字符）
-  const isSingleColumn = props.question.choices.some(choice => choice.length > 5);
-
+  
   const styleSheet = StyleSheet.create({
     option: {
       margin: 4,
@@ -104,12 +104,20 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
     { label: 'C', index: 3, text: props.question.choices[2] },
     { label: 'D', index: 4, text: props.question.choices[3] },
   ];
+  // 计算是否需要把选项放到题目中
+  const longestChoiceLength = props.question.choices.reduce((max, choice) => Math.max(max, choice.length), 0);
+  const choiceMode: choiceMode = longestChoiceLength <= 5 ? 'multiCol' :
+    longestChoiceLength <= 17 ? 'singleCol' : 'inQuestion';
+  const inQuestionChoices: string = choiceMode === "inQuestion" ?
+    String.raw`\n \n选项：\n` + options.map(option => {
+    return `${option.label}. ${option.text}`;
+  }).join('\n'):"";
 
   return (
     <View style={{ flex: 1 }}>
       <View>
         {/* 题型标题 */}
-        <View style={{ margin: 20, marginBottom: 0, flexDirection: "row" }} >
+        <View style={{ margin: 20, marginBottom: 0, flexDirection: "row",justifyContent:'space-between' }} >
           <Text variant='titleMedium' style={{ color: theme.colors.primary }} >单选题</Text>
         </View>
       </View>
@@ -118,16 +126,22 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
       <Pressable
         style={{ margin: 20, marginTop: 15, flex: 1 ,minHeight:0,overflow:'hidden'}}
         onPress={() => setFullQuestionDialogVisible(true)}
+        onLayout={(e) => setQuestionAreaHeight(e.nativeEvent.layout.height)}
       >
+        <View onLayout={(e) => setQuestionTextHeight(e.nativeEvent.layout.height)}>
         <MathText
-          content={props.question.text}
+          content={props.question.text+inQuestionChoices}
           textColor={theme.colors.onSurface}
           baseMathSize={9}
-        />
+          />
+          </View>
       </Pressable>
+
+      {questionAreaHeight<questionTextHeight?<Text style={{alignSelf:'center',marginTop:-16,marginBottom:10,color:theme.colors.secondary}}>↑点击题目查看完整题目↑</Text>:null}
+
       {/* 选项按钮 */}
       <View style={{ margin: 16, marginTop: 0  }}>
-        {isSingleColumn ? (
+        {choiceMode === 'singleCol' ? (
           // 单列显示：一行一个按钮
           <View style={styleSheet.optionColumn}>
             {options.map(option => (
@@ -143,7 +157,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
                   baseMathSize={9}
                   viewStyle={{ width: '100%' }}
                   lineStyle={{ justifyContent: 'center' }}
-                />
+                  />
               </Pressable>
             ))}
           </View>
@@ -164,7 +178,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
                       disabled={showResult}
                     >
                       <MathText
-                        content={option.text}
+                        content={(choiceMode === 'multiCol') ? option.text : option.label}
                         textColor={theme.colors.background}
                         baseMathSize={9}
                         viewStyle={{ width: '100%' }}
