@@ -136,7 +136,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
           />
           </View>
       </Pressable>
-
+      {/* 题目文本展开提示 */}
       {questionAreaHeight<questionTextHeight?<Text style={{alignSelf:'center',marginTop:-16,marginBottom:10,color:theme.colors.secondary}}>↑点击题目查看完整题目↑</Text>:null}
 
       {/* 选项按钮 */}

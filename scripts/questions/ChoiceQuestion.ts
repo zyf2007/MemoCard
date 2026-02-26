@@ -45,4 +45,16 @@ export class ChoiceQuestion extends Question {
             data.id as string
         );
     }
+
+    public reSortOptions(): ChoiceQuestion {
+        const sortedOptions = [...this.choices];
+        sortedOptions.sort(() => Math.random() - 0.5);
+        const newCorrectChoiceIndex = sortedOptions.indexOf(this.choices[this.correctChoiceIndex - 1]) + 1;
+        return new ChoiceQuestion(
+            this.text,
+            sortedOptions,
+            newCorrectChoiceIndex,
+            this.id
+        );
+    }
 }

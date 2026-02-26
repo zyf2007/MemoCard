@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Question, QuestionBaseManager } from "../questions";
+import { ChoiceQuestion, Question, QuestionBaseManager } from "../questions";
 import { Func } from "../utils/FuncSystem";
 import { LazySingletonBase } from "../utils/LazySingletonBase";
 import { QuestionConfig, QuestionGeneratorConfig } from "./QuestionGeneratorConfig";
@@ -121,10 +121,11 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
                 console.log(q.id, this.config.questionData.has(q.id) && this.config.questionData.get(q.id)!.todayFinished)
                 return !(this.config.questionData.has(q.id) && this.config.questionData.get(q.id)!.todayFinished)
             })
-            // 加入可以抽取的问题列表
-            .map(question => { this._availableQuestionsTmp.push(question); return question; })
+            // 加入可以抽取的问题列表(如果是选择题就打乱顺序)
+            .map(question => { if(question.type === "choice") {this._availableQuestionsTmp.push((question as ChoiceQuestion).reSortOptions());}else {this._availableQuestionsTmp.push(question);} return question; })
             // 在config中存入做题记录
-            .forEach((q) => { if (!this.config.questionData.has(q.id)) this.config.questionData.set(q.id, new QuestionConfig(q.id)) });
+            .forEach((q) => { if (!this.config.questionData.has(q.id)) { this.config.questionData.set(q.id, new QuestionConfig(q.id)); } return q; })
+            
         console.log("[QuestionGenerator] updateAvailableQuestionList ", this._availableQuestionsTmp.length, "Question(s)");
         // 按权重随机排序
         this.shuffleQuestionsByWeight();
@@ -132,4 +133,6 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
         this.onQuestionCountChanged.invoke(this._availableQuestionsTmp.length);
         this.persistConfig();
     }
+
+    
 }
