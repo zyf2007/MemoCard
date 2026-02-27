@@ -221,7 +221,8 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
                             text: question.text.trim(),
                             type: "choice",
                             choices: question.choices.map((c: string) => c.trim()),
-                            correctChoiceIndex: question.correctChoiceIndex
+                            correctChoiceIndex: question.correctChoiceIndex,
+                            fromBase: baseName
                         });
 
                     } else if (question.type === "filling") {
@@ -235,7 +236,8 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
                             id: uuid.v1() as string, // 自动生成ID
                             text: question.text.trim(),
                             type: "filling",
-                            correctAnswer: question.correctAnswer.trim()
+                            correctAnswer: question.correctAnswer.trim(),
+                            fromBase: baseName
                         });
                     }
 
