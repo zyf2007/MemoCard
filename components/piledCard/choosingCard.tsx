@@ -2,7 +2,7 @@ import { ChoiceQuestion } from "@/scripts/questions/ChoiceQuestion";
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { MathText } from "react-native-latex-text";
-import { Text } from 'react-native-paper';
+import { Text, TouchableRipple } from 'react-native-paper';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
 import FullQuestionDialog from "./fullQuestionDialog";
 
@@ -145,6 +145,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
           // 单列显示：一行一个按钮
           <View style={styleSheet.optionColumn}>
             {options.map(option => (
+              <TouchableRipple key={`option-ripple-${option.index}`}>
               <Pressable
                 key={`option-${option.index}`}
                 style={[getOptionButtonStyle(option.index),{right:4}]}
@@ -159,6 +160,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
                   lineStyle={{ justifyContent: 'center' }}
                   />
               </Pressable>
+                </TouchableRipple>
             ))}
           </View>
         ) : (

@@ -30,10 +30,10 @@ export class QuestionBase {
                     let parsedQuestion: Question;
                     switch (item.type) {
                         case "choice":
-                            parsedQuestion = ChoiceQuestion.fromJSON(item);
+                            parsedQuestion = ChoiceQuestion.fromJSON(item, this.baseName);
                             break;
                         case "filling":
-                            parsedQuestion = FillingQuestion.fromJSON(item);
+                            parsedQuestion = FillingQuestion.fromJSON(item, this.baseName);
                             break;
                         default:
                             throw new Error(`未知的题目类型: ${item.type}`);

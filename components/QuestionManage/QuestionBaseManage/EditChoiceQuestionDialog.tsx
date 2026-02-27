@@ -17,10 +17,11 @@ interface EditQuestionDialogProps {
   onDismiss: () => void;
   onConfirm: (question: Question) => void;
   question: Question | null;
+  baseName: string;
 }
 
 // 主弹窗组件
-export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: EditQuestionDialogProps) => {
+export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question, baseName }: EditQuestionDialogProps) => {
   const [questionType, setQuestionType] = React.useState<QuestionType>('choice');
   const [menuVisible, setMenuVisible] = React.useState(false);
   const [currentQuestionWithStatus, setCurrentQuestionWithStatus] = React.useState<QuestionWithStatus>({
@@ -73,13 +74,15 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: 
           currentQuestionWithStatus.question.text,
           currentQuestionWithStatus.question.choices,
           currentQuestionWithStatus.question.correctChoiceIndex,
-          id
+          id,
+          baseName
         );
       } else if (currentQuestionWithStatus.question instanceof FillingQuestion) {
         return new FillingQuestion(
           id,
           currentQuestionWithStatus.question.text,
-          currentQuestionWithStatus.question.correctAnswer
+          currentQuestionWithStatus.question.correctAnswer,
+          baseName
         );
       }
       // 兜底（理论上不会走到）
@@ -151,6 +154,7 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: 
             <ChoiceQuestionEditor
               initialQuestion={currentQuestionWithStatus.question as ChoiceQuestion | null}
               onUpdateQuestion={(status) => setCurrentQuestionWithStatus(status)}
+              baseName={baseName}
             />
           )}
 
@@ -158,6 +162,7 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: 
             <FillingQuestionEditor
               initialQuestion={currentQuestionWithStatus.question as FillingQuestion | null}
               onUpdateQuestion={(status) => setCurrentQuestionWithStatus(status)}
+              baseName={baseName}
             />
           )}
         </Dialog.Content>
@@ -174,9 +179,10 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question }: 
 interface ChoiceQuestionEditorProps {
   initialQuestion: ChoiceQuestion | null;
   onUpdateQuestion: (status: QuestionWithStatus) => void;
+  baseName: string;
 }
 
-const ChoiceQuestionEditor: React.FC<ChoiceQuestionEditorProps> = ({ initialQuestion, onUpdateQuestion }) => {
+const ChoiceQuestionEditor: React.FC<ChoiceQuestionEditorProps> = ({ initialQuestion, onUpdateQuestion, baseName }) => {
   const [questionText, setQuestionText] = React.useState('');
   const [choices, setChoices] = React.useState(['', '', '', '']);
   const [selectedAnswer, setSelectedAnswer] = React.useState<string>('1');
@@ -231,7 +237,8 @@ const ChoiceQuestionEditor: React.FC<ChoiceQuestionEditorProps> = ({ initialQues
       newQuestionText.trim(),
       newChoices.map(c => c.trim()),
       Number.parseInt(newAnswer) || 0, // 兜底值，避免NaN
-      initialQuestion?.id || '' // 编辑模式带ID，新建模式为空
+      initialQuestion?.id || '', // 编辑模式带ID，新建模式为空
+      baseName
     );
 
     // 传递题目对象
@@ -305,9 +312,10 @@ const MemoizedChoiceItem = React.memo(ChoiceItem);
 interface FillingQuestionEditorProps {
   initialQuestion: FillingQuestion | null;
   onUpdateQuestion: (status: QuestionWithStatus) => void;
+  baseName: string;
 }
 
-const FillingQuestionEditor: React.FC<FillingQuestionEditorProps> = ({ initialQuestion, onUpdateQuestion }) => {
+const FillingQuestionEditor: React.FC<FillingQuestionEditorProps> = ({ initialQuestion, onUpdateQuestion, baseName }) => {
   const [questionText, setQuestionText] = React.useState('');
   const [answer, setAnswer] = React.useState('');
 
@@ -345,7 +353,8 @@ const FillingQuestionEditor: React.FC<FillingQuestionEditorProps> = ({ initialQu
     const fillingQuestion = new FillingQuestion(
       initialQuestion?.id || '', // 编辑模式带ID，新建模式为空
       newQuestionText.trim(),
-      newAnswer.trim()
+      newAnswer.trim(),
+      baseName
     );
 
     // 传递题目对象

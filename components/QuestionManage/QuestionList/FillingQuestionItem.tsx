@@ -29,11 +29,13 @@ export const FillingQuestionItem: React.FC<FillingQuestionItemProps> = ({
         marginBottom: 12
       }}>
         <Icon source="text-box" size={22} color={theme.colors.primary} />
+        {/* 题目标题行 */}
         <View style={{ paddingHorizontal: 8 }}>
           <MathText
             content={question.text}
             textColor={theme.colors.onSurface}
             baseMathSize={8}
+            viewStyle={{ marginRight: 8 }}
           />
         </View>
       </View>

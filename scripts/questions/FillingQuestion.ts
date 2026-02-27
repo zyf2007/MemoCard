@@ -3,8 +3,8 @@ import { Question } from "./Question";
 export class FillingQuestion extends Question {
     public readonly correctAnswer: string;
 
-    constructor(id: string, text: string, correctAnswer: string) {
-        super(id, text);
+    constructor(id: string, text: string, correctAnswer: string, frombase: string = "undefined") {
+        super(id, text, frombase);
 
 
         this.correctAnswer = correctAnswer.trim();
@@ -21,7 +21,7 @@ export class FillingQuestion extends Question {
         };
     }
 
-    public static fromJSON(json: unknown): FillingQuestion {
+    public static fromJSON(json: unknown, frombase: string): FillingQuestion {
         if (typeof json !== "object" || json === null || !("id" in json) || !("text" in json) || !("correctAnswer" in json)) {
             throw new Error(`无效的填空题数据：${JSON.stringify(json)}`);
         }
@@ -30,7 +30,8 @@ export class FillingQuestion extends Question {
         return new FillingQuestion(
             data.id as string,
             data.text as string,
-            data.correctAnswer as string
+            data.correctAnswer as string,
+            frombase
         );
     }
 }

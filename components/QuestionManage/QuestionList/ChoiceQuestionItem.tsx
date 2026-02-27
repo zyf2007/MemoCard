@@ -48,13 +48,14 @@ export const ChoiceQuestionItem: React.FC<ChoiceQuestionItemProps> = ({
           {String.fromCodePoint(65 + index)}
         </Text>
         {/* 选项本体 */}
-        
+
         <MathText
           content={choice || '无此选项'}
           textColor={theme.colors.onSurface}
           baseMathSize={8}
+          viewStyle={{ marginRight: 8 }}
         /></View>
-      
+
     );
   };
 
@@ -73,13 +74,15 @@ export const ChoiceQuestionItem: React.FC<ChoiceQuestionItemProps> = ({
         marginBottom: 12
       }}>
         <Icon source="playlist-check" size={24} color={theme.colors.primary} />
-<View style={{ paddingHorizontal: 8 }}>
-        <MathText
-        content={question.text}
-        textColor={theme.colors.onSurface}
-        baseMathSize={8}
-      />
-</View>
+        <View style={{ paddingHorizontal: 8 }}>
+          {/* 题目内容行 */}
+          <MathText
+            content={question.text}
+            textColor={theme.colors.onSurface}
+            baseMathSize={8}
+            viewStyle={{ marginRight: 8 }}
+          />
+        </View>
       </View>
 
       {/* 选项 */}

@@ -6,7 +6,7 @@ import { ChoiceQuestion, FillingQuestion, Question, QuestionBaseManager } from '
 import { useScrollToTop } from '@react-navigation/native';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
-import { FlatList, NativeScrollEvent, NativeSyntheticEvent, StyleSheet, View } from 'react-native';
+import { FlatList, NativeScrollEvent, NativeSyntheticEvent, View } from 'react-native';
 import { AnimatedFAB, Appbar, Searchbar, Text } from 'react-native-paper';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 // 选择题列表项目组件（保留 memo 优化）
@@ -244,23 +244,9 @@ export default function ImportQuestionBase() {
           await handleCreateConfirm(question);
         }}
         question={selectedQuestion}
+        baseName={baseName as string}
       />
     </Material3ThemeProvider>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  textContainer: {
-    gap: 8, // 文本和公式之间的间距
-  },
-  mathStyle: {
-    marginVertical: 4, // 公式上下间距
-    alignSelf: 'flex-start', // 公式左对齐（默认居中）
-    color: '#FFFF00',
-  },
-});

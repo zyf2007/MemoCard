@@ -4,8 +4,8 @@ export class ChoiceQuestion extends Question {
     public readonly choices: string[];
     public readonly correctChoiceIndex: number;
 
-    constructor( text: string, choices: string[], correctChoiceIndex: number, id?: string) {
-        super(id ?? (uuid.v1() as string), text);
+    constructor( text: string, choices: string[], correctChoiceIndex: number, id?: string, frombase: string = "undefined") {
+        super(id ?? (uuid.v1() as string), text, frombase);
 
         if (!Array.isArray(choices) || choices.length !== 4) {
             throw new Error("选择题选项必须有且仅有4个");
@@ -32,7 +32,7 @@ export class ChoiceQuestion extends Question {
     }
 
     // 2.2 静态解析方法：从 JSON 数据创建实例
-    public static fromJSON(json: unknown): ChoiceQuestion {
+    public static fromJSON(json: unknown, frombase: string): ChoiceQuestion {
         if (typeof json !== "object" || json === null || !("id" in json) || !("text" in json) || !("choices" in json) || !("correctChoiceIndex" in json)) {
             throw new Error(`无效的选择题数据：${JSON.stringify(json)}`);
         }
@@ -42,7 +42,8 @@ export class ChoiceQuestion extends Question {
             data.text as string,
             data.choices as string[],
             data.correctChoiceIndex as number,
-            data.id as string
+            data.id as string,
+            frombase
         );
     }
 
@@ -54,7 +55,8 @@ export class ChoiceQuestion extends Question {
             this.text,
             sortedOptions,
             newCorrectChoiceIndex,
-            this.id
+            this.id,
+            this.frombase
         );
     }
 }

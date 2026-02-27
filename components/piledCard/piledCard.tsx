@@ -1,5 +1,6 @@
 import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
 import { ChoiceQuestion, FillingQuestion, Question } from '@/scripts/questions';
+import { Statistics } from '@/scripts/statistics/statistics';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Dimensions, StyleSheet, View } from 'react-native';
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -221,7 +222,10 @@ export default function PiledCard() {
                   translateX={translateX}
                   translateY={translateY}
                   question={q as ChoiceQuestion}
-                  onAnswerSubmit={(isCorrect) => {isCorrect && QuestionGenerator.getInstance().finishQuestion(qIndex, isCorrect); }}
+                  onAnswerSubmit={(isCorrect) => {
+                    isCorrect && QuestionGenerator.getInstance().finishQuestion(qIndex, isCorrect);
+                    Statistics.getInstance().finishQuestion(q, isCorrect);
+                   }}
                   theme={theme}
                 />
               );

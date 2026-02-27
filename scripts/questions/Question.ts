@@ -1,10 +1,11 @@
 export abstract class Question {
     public readonly id: string;
     public readonly text: string;
-
-    constructor(id: string, text: string) {
+    public readonly frombase: string;
+    constructor(id: string, text: string, frombase: string = "undefined") {
         this.id = id;
         this.text = text;
+        this.frombase = frombase;
     }
 
     public abstract get type(): "choice" | "filling";
