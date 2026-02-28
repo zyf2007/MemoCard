@@ -384,7 +384,7 @@ export default function StatisticsScreen() {
                   <Text style={{ fontSize: 14, fontWeight: '600', color: theme.colors.onSurface, marginBottom: 6 }} numberOfLines={1}>
                     {item.frombase}
                   </Text>
-                  <View style={{ height: 6, backgroundColor: theme.colors.surfaceVariant, borderRadius: 3, marginBottom: 8, overflow: 'hidden' }}>
+                  <View style={{ height: 6, backgroundColor: theme.colors.surfaceVariant, borderRadius: 3, marginBottom: 8, overflow: 'hidden', width: '92%' }}>
                     <View style={{ 
                       height: '100%',
                       borderRadius: 3, 

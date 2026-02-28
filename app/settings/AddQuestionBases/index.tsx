@@ -91,6 +91,8 @@ export default function AddQuestionBases() {
                             <TextInput
                                 label="输入 Json 文本"
                                 onChangeText={text => setDialogText(text)}
+                                multiline={true}
+                                style={{ maxHeight: 500 }}
                             />
                         </Dialog.Content>
                         <Dialog.Actions>
