@@ -1,6 +1,7 @@
 import { Material3ThemeProvider } from '@/hooks/Material3ThemeProvider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
+import { QuestionLoader } from '@/scripts/QuestionLoader/QuestionLoader';
 import { QuestionBaseManager } from '@/scripts/questions';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
@@ -8,9 +9,11 @@ import { StatusBar } from 'expo-status-bar';
 import { useRef } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { MathJaxRenderer, MathJaxRendererRef, MathRenderer } from 'react-native-latex-text';
+import { install as installCtyptoJs } from 'react-native-quick-crypto';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { enableScreens } from 'react-native-screens';
+
 enableScreens();
 
 export const unstable_settings = {
@@ -18,11 +21,13 @@ export const unstable_settings = {
 };
 
 export default function RootLayout() {
+  installCtyptoJs();
   const colorScheme = useColorScheme();
   QuestionBaseManager.getInstance();
   QuestionGenerator.getInstance();
   const mathJaxRef = useRef<MathJaxRendererRef>(null);
   MathRenderer.Init(mathJaxRef);
+  QuestionLoader.getInstance().Test();
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <MathJaxRenderer
