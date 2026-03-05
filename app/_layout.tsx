@@ -1,7 +1,7 @@
 import { Material3ThemeProvider } from '@/hooks/Material3ThemeProvider';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
-import { QuestionLoader } from '@/scripts/QuestionLoader/QuestionLoader';
+import { QuestionBaseLoader } from '@/scripts/QuestionLoader/QuestionLoader';
 import { QuestionBaseManager } from '@/scripts/questions';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { Stack } from 'expo-router';
@@ -27,7 +27,7 @@ export default function RootLayout() {
   QuestionGenerator.getInstance();
   const mathJaxRef = useRef<MathJaxRendererRef>(null);
   MathRenderer.Init(mathJaxRef);
-  QuestionLoader.getInstance().Test();
+  QuestionBaseLoader.getInstance();
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <MathJaxRenderer

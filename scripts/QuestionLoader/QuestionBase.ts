@@ -11,7 +11,8 @@ export class QuestionBase {
 
     constructor(name: string, id?: string) {
         this.name = name;
-        this.id = id ? id : generateMD5(name);
+        const timeString = new Date().toISOString();
+        this.id = id || generateMD5(name+timeString).slice(0,8) ;
     }
 
 }
