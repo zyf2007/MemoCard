@@ -1,10 +1,6 @@
 
-import QuickCrypto from 'react-native-quick-crypto';
-const generateMD5 = (str: string) => {
-    return QuickCrypto.createHash('md5')
-        .update(str)
-        .digest('hex') as unknown as string
-};
+import { generateMD5 } from '../utils/CryptoUtils';
+
 export class QuestionBase {
     public name: string;
     public id: string;
