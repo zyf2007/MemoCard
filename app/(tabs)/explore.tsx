@@ -4,8 +4,10 @@ import { Statistics } from '@/scripts/statistics/statistics';
 import { useFocusEffect } from '@react-navigation/native';
 import React, { useCallback, useState } from 'react';
 import {
+  ActivityIndicator,
   Dimensions,
   ScrollView,
+  StyleSheet,
   View
 } from 'react-native';
 import {
@@ -28,10 +30,9 @@ const chartWidth = screenWidth - 50;
 
 export default function StatisticsScreen() {
   const theme = useTheme();
-  const [selectedBase, setSelectedBase] = useState<string | 'all'>('all');
   const [availableBases, setAvailableBases] = useState<string[]>([]);
   const [timeRange, setTimeRange] = useState<7 | 30>(7);
-  const [menuVisible, setMenuVisible] = useState(false);
+  const [loading, setLoading] = useState(true);
   
   const [achievements, setAchievements] = useState<any>(null);
   const [trendData, setTrendData] = useState<any>(null);
@@ -41,23 +42,10 @@ export default function StatisticsScreen() {
   const stats = Statistics.getInstance();
 
   const loadData = useCallback(async () => {
+    setLoading(true);
     try {
-      const [
-        ach,
-        trend7,
-        trend30,
-        improved,
-        distribution,
-        bases,
-      ] = await Promise.all([
-        stats.getOverallAchievements(),
-        stats.getRecentDailyStats(7),
-        stats.getRecentDailyStats(30),
-        stats.getMostImprovedBases(7),
-        stats.getTotalStatsByBase(),
-        stats.getAllQuestionBases(),
-      ]);
-
+      const dashboardData = await stats.getDashboardData();
+      const { achievements: ach, trend7, trend30, improvedBases: improved, distribution, bases } = dashboardData;
       setAchievements(ach);
       setTrendData(timeRange === 7 ? trend7 : trend30);
       setImprovedBases(improved);
@@ -81,6 +69,8 @@ export default function StatisticsScreen() {
       setBaseDistribution(pieData);
     } catch (error) {
       console.error('加载统计数据失败:', error);
+    } finally {
+      setLoading(false);
     }
   }, [timeRange, stats, theme.colors]);
 
@@ -120,6 +110,7 @@ export default function StatisticsScreen() {
 
   return (
     <FadeInTab>
+    <View style={{ flex: 1 }}>
     <ScrollView style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Text variant="displaySmall" style={{ marginTop: 100, marginLeft: 25 }}>统计</Text>
       {/* 顶部成就概览 - 使用主题色，非彩色 */}
@@ -445,6 +436,21 @@ export default function StatisticsScreen() {
 
       <View style={{ height: 100 }} />
       </ScrollView>
+      {loading ? (
+        <View style={[styles.fullScreenLoading, { backgroundColor: theme.colors.background }]}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : null}
+      </View>
       </FadeInTab>
   );
 }
+
+const styles = StyleSheet.create({
+  fullScreenLoading: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+});

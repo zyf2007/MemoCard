@@ -1,157 +1,175 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Alert } from "react-native";
-import uuid from 'react-native-uuid';
-import { Func } from "../utils/FuncSystem";
+import { QuestionBaseLoader } from "../QuestionLoader/QuestionBaseLoader";
+import { QuestionLoader } from "../QuestionLoader/QuestionLoader";
+import { QuestionFactory } from "../QuestionFactory/questionFactory";
+import { EventDispatcher } from "../utils/EventSystem";
 import { LazySingletonBase } from "../utils/LazySingletonBase";
 import { Question } from "./Question";
 import { QuestionBase } from "./QuestionBase";
+
 export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> {
+    public onQuestionBaseListUpdated = new EventDispatcher();
+    public onQuestionUpdated = new EventDispatcher();
 
-
-    //#region Events
-    public onQuestionBaseListUpdated: Func<() => void> = new Func<() => void>();
-    public onQuestionUpdated: Func<() => void> = new Func<() => void>();
-
-    private subscribeEvents() {
-        this._questionBases.forEach(base => base.onUpdate.subscribe(this.onQuestionBaseUpdated));
-    }
-    //#endregion Events
-    
-    //#region Init / Persist
-    private readonly STORAGE_KEY = "QuestionBase";
-    private _questionBases: QuestionBase[] = [];
+    private readonly baseLoader: QuestionBaseLoader;
+    private readonly questionLoader: QuestionLoader;
+    private readonly readyPromise: Promise<void>;
+    private readonly baseCache: Map<string, QuestionBase> = new Map();
 
     constructor() {
         super();
-        this.init();
+        this.baseLoader = QuestionBaseLoader.getInstance();
+        this.questionLoader = QuestionLoader.getInstance();
+        this.readyPromise = this.init();
     }
 
-    // 初始化：读取本地存储的题库数据
+    public async ready() {
+        await this.readyPromise;
+    }
+
     private async init() {
-        await this.readData();
-        this.subscribeEvents();
+        await this.baseLoader.ready();
+        this.baseLoader.onQuestionBaseMapUpdated.on(() => {
+            void (async () => {
+                await this.syncBaseCache();
+                this.onQuestionBaseListUpdated.emit();
+            })();
+        });
+        await this.syncBaseCache();
     }
 
-    // 读取本地数据
-    private async readData() {
-        try {
-            const value = await AsyncStorage.getItem(this.STORAGE_KEY);
-            const rawJson = value ? JSON.parse(value) : [];
+    private async syncBaseCache() {
+        const baseList = await this.baseLoader.GetBaseList();
+        const validIds = new Set(baseList.map((base) => base.id));
 
-            // 重构：读取数据时为每个题库绑定onUpdate回调
-            this._questionBases = rawJson.map((item: any) => {
-                return new QuestionBase(
-                    item.baseName,
-                    item.questions
-                );
-            });
-        } catch (error) {
-            Alert.alert("错误", `读取题库数据失败：${(error as Error).message}`);
-            this._questionBases = [];
+        for (const base of baseList) {
+            const cachedBase = this.baseCache.get(base.id);
+            if (cachedBase) {
+                cachedBase.rename(base.name);
+                continue;
+            }
+
+            const runtimeBase = new QuestionBase(base);
+            runtimeBase.onUpdate.on(this.onQuestionBaseUpdated);
+            this.baseCache.set(base.id, runtimeBase);
         }
+
+        [...this.baseCache.keys()]
+            .filter((baseId) => !validIds.has(baseId))
+            .forEach((baseId) => this.baseCache.delete(baseId));
     }
 
-    // 旗下管理的题库更新时
-    public onQuestionBaseUpdated = (async (): Promise<boolean> => {
-        this.onQuestionUpdated.invoke();
-        // 持久化所有题库数据
-        try {
-            const serializableData = this._questionBases.map(base => ({
-                baseName: base.baseName,
-                questions: base.getRawQuestions().map(q => q.toJSON())
-            }));
-            await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(serializableData));
-            return true;
-        } catch (error) {
-            Alert.alert("错误", `写入题库数据失败：${(error as Error).message}`);
-            return false;
-        }
-    });
-    //#endregion Init
+    public onQuestionBaseUpdated = async () => {
+        this.onQuestionUpdated.emit();
+        return true;
+    };
 
-    //#region API
-    
-    public getAllQuestionBases(): QuestionBase[] {
-        return [...this._questionBases];
+    public async getAllQuestionBases(): Promise<QuestionBase[]> {
+        await this.ready();
+        return [...this.baseCache.values()];
     }
+
     public get questionBases(): QuestionBase[] {
-        return [...this._questionBases];
+        return [...this.baseCache.values()];
     }
-    /** 获取所有题库名称 */
+
     public getQuestionBaseNames(): string[] {
-        return this._questionBases.map(item => item.baseName);
+        return [...this.baseCache.values()].map((item) => item.baseName);
     }
 
-    /** 根据名称获取题库实例（核心：支持链式调用） */
+    public getQuestionBaseList(): Array<{ id: string; name: string }> {
+        return [...this.baseCache.values()].map((item) => ({ id: item.baseId, name: item.baseName }));
+    }
+
     public getQuestionBaseByName(baseName: string): QuestionBase | undefined {
-        return this._questionBases.find(base => base.baseName === baseName);
+        return [...this.baseCache.values()].find((base) => base.baseName === baseName);
     }
 
-    /** 创建新题库（自动绑定持久化回调） */
-    public async createQuestionBase(baseName: string): Promise<boolean> {
-        if (this.getQuestionBaseByName(baseName)) {
-            Alert.alert("警告", `名称「${baseName}」的题库已存在`);
+    public getQuestionBaseById(baseId: string): QuestionBase | undefined {
+        return this.baseCache.get(baseId);
+    }
+
+    public async hasQuestionBase(baseName: string): Promise<boolean> {
+        await this.ready();
+        return this.getQuestionBaseByName(baseName) !== undefined;
+    }
+
+    public async getQuestionBaseQuestions(baseName: string, forceReload: boolean = false): Promise<Question[]> {
+        await this.ready();
+        const questionBase = this.getQuestionBaseByName(baseName);
+        if (!questionBase) {
+            return [];
+        }
+
+        return questionBase.ensureQuestionsLoaded(forceReload);
+    }
+
+    public async getQuestionById(questionId: string) {
+        await this.ready();
+        return this.questionLoader.GetQuestionById(questionId);
+    }
+
+    public async createQuestionBase(baseName: string): Promise<QuestionBase | null> {
+        await this.ready();
+        const trimmedName = baseName.trim();
+        if (!trimmedName) {
+            Alert.alert("警告", "题库名称不能为空");
+            return null;
+        }
+
+        const newBase = await this.baseLoader.AddBase(trimmedName);
+        await this.questionLoader.SaveQuestionBase(newBase.id, []);
+        await this.syncBaseCache();
+        return this.baseCache.get(newBase.id) || null;
+    }
+
+    public async deleteQuestionBase(baseIdOrName: string): Promise<boolean> {
+        await this.ready();
+        const targetBase = this.getQuestionBaseById(baseIdOrName) || this.getQuestionBaseByName(baseIdOrName);
+        if (!targetBase) {
+            Alert.alert("警告", `未找到指定题库`);
             return false;
         }
 
-        // 给新题库绑定onUpdate回调（指向Manager的persistData）
-        const newQuestionBase = new QuestionBase(
-            baseName,
-            []
-        );
-        newQuestionBase.onUpdate.subscribe(this.onQuestionBaseUpdated);
-        this._questionBases.push(newQuestionBase);
-        // 触发列表更新回调
-        this.onQuestionBaseListUpdated.invoke();
-
-        // 创建后立即持久化
-        return await this.onQuestionBaseUpdated();
-    }
-
-    /** 删除整个题库 */
-    public async deleteQuestionBase(baseName: string): Promise<boolean> {
-        const initialLength = this._questionBases.length;
-        this._questionBases = this._questionBases.filter(base => base.baseName !== baseName);
-
-        const isDeleted = this._questionBases.length < initialLength;
-        if (isDeleted) {
-            // 删除成功则触发列表更新回调
-            this.onQuestionBaseListUpdated.invoke();
-            return await this.onQuestionBaseUpdated(); // 删除成功则持久化
+        const deleted = await this.baseLoader.RemoveBase(targetBase.baseId);
+        if (!deleted) {
+            return false;
         }
-        Alert.alert("警告", `未找到名称为「${baseName}」的题库`);
-        return false;
+
+        await this.questionLoader.DeleteQuestionBase(targetBase.baseId);
+        this.baseCache.delete(targetBase.baseId);
+        this.onQuestionUpdated.emit();
+        return true;
     }
 
-    /** 修改题库名称（代理调用QuestionBase的rename方法） */
     public async renameQuestionBase(oldName: string, newName: string): Promise<boolean> {
+        await this.ready();
         const targetBase = this.getQuestionBaseByName(oldName);
         if (!targetBase) {
             Alert.alert("警告", `未找到名称为「${oldName}」的题库`);
             return false;
         }
-        if (this.getQuestionBaseByName(newName)) {
-            Alert.alert("警告", `名称「${newName}」已存在`);
+
+        const trimmedName = newName.trim();
+        if (!trimmedName) {
+            Alert.alert("警告", "题库名称不能为空");
             return false;
         }
-        // 直接调用QuestionBase的rename方法（自动触发持久化）
-        await targetBase.rename(newName);
-        // 触发列表更新回调
-        this.onQuestionBaseListUpdated.invoke();
+
+        const renamed = await this.baseLoader.RenameBase(targetBase.baseId, trimmedName);
+        if (!renamed) {
+            return false;
+        }
+
+        targetBase.rename(trimmedName);
+        this.onQuestionUpdated.emit();
         return true;
     }
 
-    public hasQuestionBase(baseName: string): boolean {
-        return this.getQuestionBaseByName(baseName) !== undefined;
-    }
-    public getAllQuestions(): Question[] {
-        return this._questionBases.flatMap(base => base.getRawQuestions());
-    }
-
-
     public async importQuestionBaseFromJson(jsonStr: string): Promise<boolean> {
+        await this.ready();
+
         try {
-            // 1. 解析JSON字符串并做基础校验
             let rawData: any;
             try {
                 rawData = JSON.parse(jsonStr);
@@ -159,7 +177,6 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
                 throw new Error(`JSON格式错误：${(parseError as Error).message}`);
             }
 
-            // 2. 校验题库核心字段
             if (!rawData.baseName || typeof rawData.baseName !== "string" || rawData.baseName.trim() === "") {
                 throw new Error("题库名称（baseName）不能为空，且必须为字符串类型");
             }
@@ -170,22 +187,17 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
                 throw new Error("题目列表（questions）不能为空，请至少包含1道题目");
             }
 
-            // 3. 检查题库名称是否已存在
             const baseName = rawData.baseName.trim();
-            if (this.getQuestionBaseByName(baseName)) {
-                Alert.alert("警告", `名称「${baseName}」的题库已存在，无法重复创建`);
-                return false;
-            }
 
-            // 4. 对每道题目进行完整性校验，并自动生成ID
-            const validatedQuestions: any[] = [];
+            const newBaseMeta = await this.baseLoader.AddBase(baseName);
+            const validatedQuestions: Question[] = [];
             let invalidCount = 0;
+
             for (let i = 0; i < rawData.questions.length; i++) {
                 const question = rawData.questions[i];
-                const questionIndex = i + 1; // 便于提示第几题出错
+                const questionIndex = i + 1;
 
                 try {
-                    // 基础字段校验
                     if (typeof question !== "object" || question === null) {
                         throw new Error("非对象类型");
                     }
@@ -196,51 +208,44 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
                         throw new Error(`类型（type）必须为"choice"（选择题）或"filling"（填空题）`);
                     }
 
-                    // 按题型细分校验
                     if (question.type === "choice") {
-                        // 选择题校验
                         if (!Array.isArray(question.choices) || question.choices.length !== 4) {
                             throw new Error("选择题必须包含4个选项（choices数组长度必须为4）");
                         }
-                        // 校验每个选项
                         for (let j = 0; j < question.choices.length; j++) {
                             if (typeof question.choices[j] !== "string" || question.choices[j].trim() === "") {
                                 throw new Error(`选择题第${j + 1}个选项不能为空，且必须为字符串类型`);
                             }
                         }
-                        // 校验正确答案索引
                         if (typeof question.correctChoiceIndex !== "number" ||
                             question.correctChoiceIndex < 1 ||
                             question.correctChoiceIndex > 4) {
                             throw new Error("选择题正确答案索引（correctChoiceIndex）必须为1-4之间的数字");
                         }
 
-                        // 生成UUID并组装校验后的选择题数据
-                        validatedQuestions.push({
-                            id: uuid.v1() as string, // 自动生成ID
-                            text: question.text.trim(),
-                            type: "choice",
-                            choices: question.choices.map((c: string) => c.trim()),
-                            correctChoiceIndex: question.correctChoiceIndex,
-                            fromBase: baseName
-                        });
-
-                    } else if (question.type === "filling") {
-                        // 填空题校验
+                        validatedQuestions.push(
+                            QuestionFactory.createChoiceQuestion({
+                                baseId: newBaseMeta.id,
+                                baseName,
+                                text: question.text.trim(),
+                                choices: question.choices.map((choice: string) => choice.trim()),
+                                correctChoiceIndex: question.correctChoiceIndex,
+                            })
+                        );
+                    } else {
                         if (!question.correctAnswer || typeof question.correctAnswer !== "string" || question.correctAnswer.trim() === "") {
                             throw new Error("填空题正确答案（correctAnswer）不能为空，且必须为字符串类型");
                         }
 
-                        // 生成UUID并组装校验后的填空题数据
-                        validatedQuestions.push({
-                            id: uuid.v1() as string, // 自动生成ID
-                            text: question.text.trim(),
-                            type: "filling",
-                            correctAnswer: question.correctAnswer.trim(),
-                            fromBase: baseName
-                        });
+                        validatedQuestions.push(
+                            QuestionFactory.createFillingQuestion({
+                                baseId: newBaseMeta.id,
+                                baseName,
+                                text: question.text.trim(),
+                                correctAnswer: question.correctAnswer.trim(),
+                            })
+                        );
                     }
-
                 } catch (questionError) {
                     invalidCount++;
                     Alert.alert(
@@ -251,36 +256,23 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
                 }
             }
 
-            // 5. 若无效题目数等于总题目数，终止导入
             if (invalidCount === rawData.questions.length) {
+                await this.baseLoader.RemoveBase(newBaseMeta.id);
                 throw new Error("所有题目均校验失败，终止题库导入");
             }
 
-            // 6. 创建新题库并导入校验后的题目
-            const newQuestionBase = new QuestionBase(
-                baseName,
-                validatedQuestions,
+            await this.questionLoader.SaveQuestionBase(newBaseMeta.id, validatedQuestions);
+            await this.syncBaseCache();
+            this.onQuestionUpdated.emit();
+
+            Alert.alert(
+                "导入成功",
+                `题库「${baseName}」创建成功！\n有效题目数：${validatedQuestions.length}道\n无效题目数：${invalidCount}道`
             );
-            newQuestionBase.onUpdate.subscribe(this.onQuestionBaseUpdated);
-            this._questionBases.push(newQuestionBase);
-
-            // 7. 触发回调和持久化
-            this.onQuestionBaseListUpdated.invoke();
-            const persistResult = await this.onQuestionBaseUpdated();
-
-            if (persistResult) {
-                const successCount = validatedQuestions.length;
-                Alert.alert(
-                    "导入成功",
-                    `题库「${baseName}」创建成功！\n有效题目数：${successCount}道\n无效题目数：${invalidCount}道`
-                );
-            }
-            return persistResult;
-
+            return true;
         } catch (error) {
             Alert.alert("导入失败", `解析或创建题库时出错：${(error as Error).message}`);
             return false;
         }
     }
-    //#endregion API
 }

@@ -1,5 +1,3 @@
-import { QuestionBaseManager } from "../questions";
-
 export class QuestionConfig{
     questionId: string;
     weight: number;
@@ -14,11 +12,11 @@ export class QuestionConfig{
 
 export class QuestionGeneratorConfig {
     public lastInitTime: string = "";
-    public enabledQuestionBaseNames: Set<string> = new Set();
+    public enabledQuestionBaseIds: Set<string> = new Set();
     public questionData:Map<string,QuestionConfig> = new Map();
     FromJson(json: any) {
-        console.log("[QuestionGeneratorPersisted] FromJson ", json.enabledQuestionBaseNames);
-        this.enabledQuestionBaseNames = new Set(json.enabledQuestionBaseNames || []);
+        console.log("[QuestionGeneratorPersisted] FromJson ", json.enabledQuestionBaseIds);
+        this.enabledQuestionBaseIds = new Set(json.enabledQuestionBaseIds || []);
         this.questionData = new Map(json.flatQuestionData || []);
         console.log(this.questionData) 
         this.lastInitTime = json.lastInitTime;
@@ -32,21 +30,20 @@ export class QuestionGeneratorConfig {
             this.lastInitTime = new Date().toDateString();
         }
         
-        this.RemoveInvalidQuestions();
     }
 
     ToJson() {
         return {
-            enabledQuestionBaseNames: [...this.enabledQuestionBaseNames],
+            enabledQuestionBaseIds: [...this.enabledQuestionBaseIds],
             flatQuestionData: [...this.questionData],
             lastInitTime: this.lastInitTime,
         };
     }
 
-    public RemoveInvalidQuestions() {
+    public RemoveInvalidQuestions(validQuestionIds: Set<string>) {
         const invalidQuestionIds: Set<string> = new Set();
         this.questionData.forEach((value, key) => {
-            if (!QuestionBaseManager.getInstance().getAllQuestions().some((q) => q.id === value.questionId)) {
+            if (!validQuestionIds.has(value.questionId)) {
                 invalidQuestionIds.add(value.questionId);
             }
         });

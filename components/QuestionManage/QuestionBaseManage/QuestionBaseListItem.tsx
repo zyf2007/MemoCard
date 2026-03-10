@@ -7,6 +7,7 @@ import { IconButton, List } from 'react-native-paper';
 
 // 定义组件的属性类型
 export interface QuestionBaseItemProps {
+  id: string;
   name: string;          // 题库名称
   theme: any;            // 主题对象
   onDeletePress: () => void; // 删除按钮点击回调
@@ -14,11 +15,12 @@ export interface QuestionBaseItemProps {
 
 // 独立的题库列表项组件
 export const QuestionBaseItem: React.FC<QuestionBaseItemProps> = ({
+  id,
   name,
   theme,
   onDeletePress
 }) => {
-  const [isSwitchOn, setIsSwitchOn] = React.useState(QuestionGenerator.getInstance().isQuestionBaseEnabled(name));
+  const [isSwitchOn, setIsSwitchOn] = React.useState(QuestionGenerator.getInstance().isQuestionBaseEnabled(id));
   const onToggleSwitch = () => {
 
     setIsSwitchOn((prevIsSwitchOn) => !prevIsSwitchOn);
@@ -26,11 +28,11 @@ export const QuestionBaseItem: React.FC<QuestionBaseItemProps> = ({
   };
   useEffect(() => {
     if (isSwitchOn) {
-      QuestionGenerator.getInstance().enableQuestionBase(name);
+      void QuestionGenerator.getInstance().enableQuestionBase(id);
     } else {
-      QuestionGenerator.getInstance().disableQuestionBase(name);
+      void QuestionGenerator.getInstance().disableQuestionBase(id);
     }
-  }, [isSwitchOn, name]);
+  }, [id, isSwitchOn]);
   return (
     <List.Item
       key={name}
@@ -51,7 +53,7 @@ export const QuestionBaseItem: React.FC<QuestionBaseItemProps> = ({
             mode="contained"
             onPress={() => router.push({
               pathname: '/settings/manageQuestionBases/manageQuestionBase',
-              params: { baseName: name }
+              params: { baseId: id }
             })}
           />
           <IconButton

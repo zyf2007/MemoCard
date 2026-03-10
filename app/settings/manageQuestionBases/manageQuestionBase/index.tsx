@@ -14,6 +14,7 @@ const MemoizedQuestionItem = React.memo(QuestionListItem);
 
 export default function ImportQuestionBase() {
   const theme = useAppTheme();
+  const questionBaseManager = QuestionBaseManager.getInstance<QuestionBaseManager>();
   // 编辑题目弹窗状态
   const [dialogVisible, setDialogVisible] = React.useState(false);
   // 选中的题目 用来传给编辑题目的弹窗
@@ -21,8 +22,9 @@ export default function ImportQuestionBase() {
   // 右下角按钮折叠
   const [fabExtended, setFabExtended] = React.useState(true);
   const params = useLocalSearchParams();
-  const { baseName } = params;
+  const { baseId } = params;
   
+  const [baseName, setBaseName] = React.useState('');
   // 原始题目列表
   const [allQuestions, setAllQuestions] = React.useState<Question[]>([]);
   // 筛选后的题目列表（用于渲染）
@@ -36,26 +38,43 @@ export default function ImportQuestionBase() {
 
   const flatListRef = React.useRef<FlatList<Question>>(null);
   useScrollToTop(flatListRef);
+  const [questionBase, setQuestionBase] = React.useState<ReturnType<typeof questionBaseManager.getQuestionBaseById> | null>(null);
 
-  const questionBase = React.useMemo(() => {
-    if (!baseName) return null;
-    const name = Array.isArray(baseName) ? baseName[0] : baseName;
-    return QuestionBaseManager.getInstance<QuestionBaseManager>().getQuestionBaseByName(name);
-  }, [baseName]);
+  React.useEffect(() => {
+    const loadQuestionBase = async () => {
+      await questionBaseManager.ready();
+      if (!baseId) {
+        setQuestionBase(null);
+        return;
+      }
+
+      const id = Array.isArray(baseId) ? baseId[0] : baseId;
+      setQuestionBase(questionBaseManager.getQuestionBaseById(id) || null);
+    };
+
+    void loadQuestionBase();
+  }, [baseId, questionBaseManager]);
 
   // 刷新题目列表
-  const refreshQuestionList = React.useCallback(() => {
+  const refreshQuestionList = React.useCallback(async () => {
     if (questionBase) {
-      const questions = [...questionBase.questions];
+      const questions = await questionBase.ensureQuestionsLoaded(true);
+      setBaseName(questionBase.baseName);
       setAllQuestions(questions);
       setFilteredQuestions(questions);
+    } else {
+      setBaseName('');
+      setAllQuestions([]);
+      setFilteredQuestions([]);
     }
   }, [questionBase]);
 
   // 初始化和订阅 [题库更新→刷新列表] 事件
   React.useEffect(() => {
-    refreshQuestionList();
-    const unsubscribe = questionBase?.onUpdate.subscribe(refreshQuestionList);
+    void refreshQuestionList();
+    const unsubscribe = questionBase?.onUpdate.on(() => {
+      void refreshQuestionList();
+    });
     return () => {
       console.log('[QuestionBaseManage] Backend unsubscribed');
       unsubscribe?.();
@@ -244,9 +263,9 @@ export default function ImportQuestionBase() {
           await handleCreateConfirm(question);
         }}
         question={selectedQuestion}
-        baseName={baseName as string}
+        baseName={baseName}
+        baseId={questionBase?.baseId || ''}
       />
     </Material3ThemeProvider>
   );
 }
-

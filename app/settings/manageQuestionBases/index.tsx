@@ -10,27 +10,33 @@ import { Button, Dialog, Portal, Text } from 'react-native-paper';
 export default function ManageQuestionBases() {
     const theme = useAppTheme();
     const [deleteDialogVisible, setDeleteDialogVisible] = React.useState(false);
-    const [QuestionBaseName, setQuestionBaseName] = React.useState("");
-    const [questionBaseList, setQuestionBaseList] = React.useState<string[]>([]);
+    const [selectedBase, setSelectedBase] = React.useState<{ id: string; name: string } | null>(null);
+    const [questionBaseList, setQuestionBaseList] = React.useState<Array<{ id: string; name: string }>>([]);
     const questionBaseManager = QuestionBaseManager.getInstance<QuestionBaseManager>();
+
     React.useEffect(() => {
-        const updateList = () => {
+        const updateList = async () => {
+            await questionBaseManager.ready();
             console.log("[QuestionBasesManage] QuestionBaseListUpdated");
-            setQuestionBaseName("");
-            const newList = questionBaseManager.getQuestionBaseNames() || [];
-            setQuestionBaseList(Array.isArray(newList) ? newList : []);
+            setSelectedBase(null);
+            setQuestionBaseList(questionBaseManager.getQuestionBaseList());
         };
-        updateList();
-        return questionBaseManager.onQuestionBaseListUpdated.subscribe(updateList);
+
+        void updateList();
+        return questionBaseManager.onQuestionBaseListUpdated.on(() => {
+            void updateList();
+        });
     }, [questionBaseManager]);
 
     const handleDeleteConfirm = () => {
         setDeleteDialogVisible(false);
-        questionBaseManager.deleteQuestionBase(QuestionBaseName);
+        if (selectedBase) {
+            void questionBaseManager.deleteQuestionBase(selectedBase.id);
+        }
     };
 
-    const handleItemDeletePress = (name: string) => {
-        setQuestionBaseName(name);
+    const handleItemDeletePress = (base: { id: string; name: string }) => {
+        setSelectedBase(base);
         setDeleteDialogVisible(true);
     };
 
@@ -45,12 +51,13 @@ export default function ManageQuestionBases() {
                                     <Text style={theme.fonts.bodyLarge}>暂无题库</Text>
                                 </View>
                             )
-                            : questionBaseList.map((name) => (
+                            : questionBaseList.map((base) => (
                                 <QuestionBaseItem
-                                    key={name}
-                                    name={name}
+                                    key={base.id}
+                                    id={base.id}
+                                    name={base.name}
                                     theme={theme}
-                                    onDeletePress={() => handleItemDeletePress(name)}
+                                    onDeletePress={() => handleItemDeletePress(base)}
                                 />
                             ))
                         )
@@ -69,9 +76,9 @@ export default function ManageQuestionBases() {
                     style={{ marginTop: -60 }}
                 >
                     <Dialog.Icon icon="file-document-edit" />
-                    <Dialog.Title>即将删除题库「{QuestionBaseName}」</Dialog.Title>
+                    <Dialog.Title>即将删除题库「{selectedBase?.name ?? ""}」</Dialog.Title>
                     <Dialog.Content>
-                        <Text>确认删除题库「{QuestionBaseName}」吗？</Text>
+                        <Text>确认删除题库「{selectedBase?.name ?? ""}」吗？</Text>
                     </Dialog.Content>
                     <Dialog.Actions>
                         <Button onPress={() => setDeleteDialogVisible(false)}>Cancel</Button>

@@ -1,4 +1,5 @@
 import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
+import { QuestionLoader } from '@/scripts/QuestionLoader/QuestionLoader';
 import { ChoiceQuestion, FillingQuestion, Question } from '@/scripts/questions';
 import { Statistics } from '@/scripts/statistics/statistics';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
@@ -133,11 +134,21 @@ export default function PiledCard() {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const [maxIndex, setMaxIndex] = useState(QuestionGenerator.getInstance().getAvailableQuestionCount());
+  const [displayQuestions, setDisplayQuestions] = useState<Record<number, Question>>({});
+  const displayQuestionCacheRef = useRef<Map<string, Question>>(new Map());
+  const loadTokenRef = useRef(0);
   useEffect(() => {
-    return QuestionGenerator.getInstance().onQuestionCountChanged.subscribe((count) => {
+    const generator = QuestionGenerator.getInstance();
+    void generator.ready().then(() => {
+      setMaxIndex(generator.getAvailableQuestionCount());
+    });
+
+    return generator.onQuestionCountChanged.on((count) => {
       setMaxIndex(count);
       currentIndexSv.value = 0;
       setCurrentIndex(0);
+      setDisplayQuestions({});
+      displayQuestionCacheRef.current.clear();
     });
   }, []);
   const updateIndex = useCallback((step: number) => {
@@ -196,6 +207,48 @@ export default function PiledCard() {
 
   const questionIndex = [currentIndex - 1, currentIndex, currentIndex + 1];
   const [dialogId, setDialogId] = useState(0);
+
+  useEffect(() => {
+    const loadVisibleQuestions = async () => {
+      const currentLoadToken = ++loadTokenRef.current;
+      const nextQuestions: Record<number, Question> = {};
+
+      for (const qIndex of questionIndex) {
+        if (qIndex < 0 || qIndex >= maxIndex) {
+          continue;
+        }
+
+        const questionId = QuestionGenerator.getInstance().getQuestionId(qIndex);
+        if (!questionId) {
+          continue;
+        }
+
+        const cachedQuestion = displayQuestionCacheRef.current.get(questionId);
+        if (cachedQuestion) {
+          nextQuestions[qIndex] = cachedQuestion;
+          continue;
+        }
+
+        const question = await QuestionLoader.getInstance().GetQuestionById(questionId);
+        if (!question) {
+          continue;
+        }
+
+        const processedQuestion = question.postProcessForDisplay();
+
+        displayQuestionCacheRef.current.set(questionId, processedQuestion);
+        nextQuestions[qIndex] = processedQuestion;
+      }
+
+      if (currentLoadToken !== loadTokenRef.current) {
+        return;
+      }
+      setDisplayQuestions(nextQuestions);
+    };
+
+    void loadVisibleQuestions();
+  }, [currentIndex, dialogId, maxIndex]);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <View style={{ backgroundColor: theme.colors.background, flex: 1 }}>
@@ -203,15 +256,17 @@ export default function PiledCard() {
           <View style={styles.wrapper}>
             {questionIndex.map((qIndex) => {
               if (qIndex < 0 || qIndex >= maxIndex) {
-                console.log('No Question, Total: ', maxIndex, ' Current: ', currentIndex);
                 return (
                 <View key={qIndex} style={{position: 'absolute',}}>
-                    <Button onPress={() => { QuestionGenerator.getInstance().updateAvailableQuestionList(); setDialogId(dialogId + 1); }}>
+                    <Button onPress={() => { void QuestionGenerator.getInstance().updateAvailableQuestionList(); setDialogId(dialogId + 1); }}>
                       {maxIndex>0? '重做今日错题' : '今日已完成所有题！'}
                     </Button>
                 </View>);
               }
-              const q = QuestionGenerator.getInstance().getQuestion(qIndex);
+              const q = displayQuestions[qIndex];
+              if (!q) {
+                return null;
+              }
 
               return (
                 <IndividualCard
@@ -223,8 +278,10 @@ export default function PiledCard() {
                   translateY={translateY}
                   question={q as ChoiceQuestion}
                   onAnswerSubmit={(isCorrect) => {
-                    isCorrect && QuestionGenerator.getInstance().finishQuestion(qIndex, isCorrect);
-                    Statistics.getInstance().finishQuestion(q, isCorrect);
+                    if (isCorrect) {
+                      void QuestionGenerator.getInstance().finishQuestion(qIndex, isCorrect);
+                    }
+                    void Statistics.getInstance().finishQuestion(q, isCorrect);
                    }}
                   theme={theme}
                 />

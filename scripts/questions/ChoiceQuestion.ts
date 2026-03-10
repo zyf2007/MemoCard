@@ -59,4 +59,8 @@ export class ChoiceQuestion extends Question {
             this.frombase
         );
     }
+
+    public override postProcessForDisplay(): Question {
+        return this.reSortOptions();
+    }
 }

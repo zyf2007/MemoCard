@@ -1,119 +1,134 @@
-import { Alert } from "react-native";
-import { Func } from "../utils/FuncSystem";
+import { QuestionBase as QuestionBaseMeta } from "../QuestionLoader/QuestionBase";
+import { QuestionLoader } from "../QuestionLoader/QuestionLoader";
+import { generateMD5 } from "../utils/CryptoUtils";
+import { EventDispatcher } from "../utils/EventSystem";
 import { ChoiceQuestion } from "./ChoiceQuestion";
 import { FillingQuestion } from "./FillingQuestion";
 import { Question } from "./Question";
 
 export class QuestionBase {
-    //#region Init / Persistence
     private _baseName: string;
+    private readonly _baseId: string;
+    private _questions: Question[] = [];
+    private hasLoadedQuestions = false;
+
+    public readonly onUpdate = new EventDispatcher();
+
+    constructor(meta: QuestionBaseMeta) {
+        this._baseName = meta.name;
+        this._baseId = meta.id;
+    }
+
     public get baseName(): string {
         return this._baseName;
     }
-    private set baseName(newName: string) {
-        this._baseName = newName;
+
+    public get baseId(): string {
+        return this._baseId;
     }
 
-
-    private _questions: Question[] = [];
     public get questions(): Question[] {
         return [...this._questions];
     }
 
-    // 解析JSON为题目列表
-    private parseJsonString(s: string): Question[] {
-        const ret: Question[] = [];
-        try {
-            const rawQuestions = JSON.parse(s);
-            for (const item of rawQuestions) {
-                try {
-                    let parsedQuestion: Question;
-                    switch (item.type) {
-                        case "choice":
-                            parsedQuestion = ChoiceQuestion.fromJSON(item, this.baseName);
-                            break;
-                        case "filling":
-                            parsedQuestion = FillingQuestion.fromJSON(item, this.baseName);
-                            break;
-                        default:
-                            throw new Error(`未知的题目类型: ${item.type}`);
-                    }
-                    ret.push(parsedQuestion);
-                } catch (parseError) {
-                    Alert.alert("数据解析警告", (parseError as Error).message);
-                }
-            }
-        } catch (error) {
-            Alert.alert("错误", `读取失败：${(error as Error).message}`);
-            return [];
+    public async ensureQuestionsLoaded(forceReload: boolean = false) {
+        if (this.hasLoadedQuestions && !forceReload) {
+            return [...this._questions];
         }
-        return ret;
+
+        this._questions = await QuestionLoader.getInstance().LoadQuestionBase(this._baseId, this._baseName);
+        const migratedQuestions = this.migrateLegacyQuestionIds(this._questions);
+        if (migratedQuestions) {
+            this._questions = migratedQuestions;
+            await QuestionLoader.getInstance().SaveQuestionBase(this._baseId, this._questions);
+        }
+        this.hasLoadedQuestions = true;
+        return [...this._questions];
     }
 
-    /**
-     * 构造函数
-     * @param baseName 题库名称
-     * @param rawQuestions 初始题目数据
-     * @param onUpdate 修改后触发的持久化回调
-     */
-    constructor(baseName: string, rawQuestions: any) {
-        this._baseName = baseName;
-        this._questions = this.parseJsonString(JSON.stringify(rawQuestions));
-    }
-    //#endregion Init
-
-    //#region Events
-    // 修改回调：触发数据持久化
-    public readonly onUpdate: Func<() => void> = new Func();
-    //#endregion Events
-
-    //#region API
-    
-
-    /** 导入多题（批量添加） */
-    public importQuestions(questions: string) {
-        this._questions = this._questions.concat(this.parseJsonString(questions));
-        this.onUpdate.invoke();
+    public async importQuestions(questions: Question[]) {
+        await this.ensureQuestionsLoaded();
+        this._questions = this._questions.concat(questions);
+        await this.persist();
     }
 
-    /** 添加单题 */
-    public addQuestion(question: Question){
-        const existingIndex = this._questions.findIndex(q => q.id === question.id);
+    public async addQuestion(question: Question) {
+        await this.ensureQuestionsLoaded();
+        const existingIndex = this._questions.findIndex((q) => q.id === question.id);
 
         if (existingIndex >= 0) {
             this._questions[existingIndex] = question;
-            console.log(`已更新题目 ID: ${question.id}`);
         } else {
-            console.log(`已添加新题目 ID: ${question.id}`);
             this._questions.push(question);
         }
 
-        this.onUpdate.invoke();
+        await this.persist();
     }
 
-    /** 按ID删除题目 */
-    public removeQuestionById(questionId: string){
+    public async removeQuestionById(questionId: string) {
+        await this.ensureQuestionsLoaded();
         const initialLength = this._questions.length;
-        this._questions = this._questions.filter(q => q.id !== questionId);
-        const isRemoved = this._questions.length < initialLength;
-        if (isRemoved) {
-            this.onUpdate.invoke();
-        }
-        else {
-            console.log(`[QuestionBase] ${this.baseName} 未找到题目 ID: ${questionId}`);
+        this._questions = this._questions.filter((q) => q.id !== questionId);
+        if (this._questions.length !== initialLength) {
+            await this.persist();
         }
     }
 
-    /** 修改题库名称（内置，操作后触发持久化） */
-    public rename(newName: string){
-        this._baseName = newName;
-        this.onUpdate.invoke();
+    public rename(newName: string) {
+        this._baseName = newName.trim();
     }
 
     public getRawQuestions(): Question[] {
-        return this._questions;
+        return [...this._questions];
     }
-    //#endregion API
 
+    public unloadQuestions() {
+        this._questions = [];
+        this.hasLoadedQuestions = false;
+        QuestionLoader.getInstance().UnLoadQuestionBase(this._baseId);
+    }
 
+    private async persist() {
+        await QuestionLoader.getInstance().SaveQuestionBase(this._baseId, this._questions);
+        this.onUpdate.emit();
+    }
+
+    private migrateLegacyQuestionIds(questions: Question[]) {
+        const usedIds = new Set<string>();
+        let hasMigration = false;
+        const migrated = questions.map((question, index) => {
+            if (question.id.startsWith(this._baseId)) {
+                usedIds.add(question.id);
+                return question;
+            }
+
+            hasMigration = true;
+            let migratedId = `${this._baseId}${generateMD5(`${question.id}`).slice(0, 8)}`;
+            while (usedIds.has(migratedId)) {
+                migratedId = `${this._baseId}${generateMD5(`${question.id}-${index}-${usedIds.size}`).slice(0, 8)}`;
+            }
+            usedIds.add(migratedId);
+
+            if (question.type === "choice") {
+                const choiceQuestion = question as ChoiceQuestion;
+                return new ChoiceQuestion(
+                    choiceQuestion.text,
+                    choiceQuestion.choices,
+                    choiceQuestion.correctChoiceIndex,
+                    migratedId,
+                    this._baseName
+                );
+            }
+
+            const fillingQuestion = question as FillingQuestion;
+            return new FillingQuestion(
+                migratedId,
+                fillingQuestion.text,
+                fillingQuestion.correctAnswer,
+                this._baseName
+            );
+        });
+
+        return hasMigration ? migrated : null;
+    }
 }

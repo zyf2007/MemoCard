@@ -76,7 +76,7 @@ export default function AddQuestionBases() {
                         </Dialog.Content>
                         <Dialog.Actions>
                             <Button onPress={() => setCreateBaseVisible(false)}>Cancel</Button>
-                            <Button onPress={() => { setCreateBaseVisible(false); createQuestionBase(dialogText) }}>Ok</Button>
+                            <Button onPress={() => { setCreateBaseVisible(false); void createQuestionBase(dialogText); }}>Ok</Button>
                         </Dialog.Actions>
                     </Dialog>
                     <Dialog
@@ -97,7 +97,7 @@ export default function AddQuestionBases() {
                         </Dialog.Content>
                         <Dialog.Actions>
                             <Button onPress={() => { setImportBaseVisible(false); setDialogText("") } }>Cancel</Button>
-                            <Button onPress={() => { setImportBaseVisible(false); importQuestionBase(dialogText) }}>Ok</Button>
+                            <Button onPress={() => { setImportBaseVisible(false); void importQuestionBase(dialogText); }}>Ok</Button>
                         </Dialog.Actions>
                     </Dialog>
 
@@ -109,13 +109,17 @@ export default function AddQuestionBases() {
 }
 
 
-function createQuestionBase(name: string) {
-    QuestionBaseManager.getInstance().createQuestionBase(name);
+async function createQuestionBase(name: string) {
+    const questionBase = await QuestionBaseManager.getInstance().createQuestionBase(name);
+    if (!questionBase) {
+        return;
+    }
+
     router.push({
         pathname: "/settings/manageQuestionBases/manageQuestionBase",
-        params: { baseName: name },
+        params: { baseId: questionBase.baseId },
     });
 }
-function importQuestionBase(jsonText: string) {
-    QuestionBaseManager.getInstance().importQuestionBaseFromJson(jsonText);
+async function importQuestionBase(jsonText: string) {
+    await QuestionBaseManager.getInstance().importQuestionBaseFromJson(jsonText);
 }

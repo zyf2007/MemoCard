@@ -1,48 +1,91 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { EventDispatcher } from "../utils/EventSystem";
 import { LazySingletonBase } from "../utils/LazySingletonBase";
 import { QuestionBase } from "./QuestionBase";
 
-export class QuestionBaseLoader extends LazySingletonBase<QuestionBaseLoader>{
+export class QuestionBaseLoader extends LazySingletonBase<QuestionBaseLoader> {
     readonly BaseMapKey = "QuestionBaseMap";
     private _questionBaseMap: Map<string, QuestionBase> = new Map();
+    private readonly readyPromise: Promise<void>;
+    public readonly onQuestionBaseMapUpdated = new EventDispatcher();
 
-
-    constructor(){
+    constructor() {
         super();
-        this.loadQuestionBaseMap();
+        this.readyPromise = this.loadQuestionBaseMap();
+    }
+
+    public async ready() {
+        await this.readyPromise;
     }
 
     private async loadQuestionBaseMap() {
         const questionBaseMapString = await AsyncStorage.getItem(this.BaseMapKey) || "[]";
-        const questionList = JSON.parse(questionBaseMapString);
-        this._questionBaseMap = new Map(questionList);
-        console.log("[QuestionLoader] LoadedQuestionBaseMap", this._questionBaseMap);
-        this.Test();
+        const questionList = JSON.parse(questionBaseMapString) as Array<[string, { id: string; name: string }]>;
+        this._questionBaseMap = new Map(
+            questionList.map(([id, rawBase]) => [id, new QuestionBase(rawBase.name, rawBase.id || id)])
+        );
+        console.log("[QuestionBaseLoader] LoadedQuestionBaseMap", this._questionBaseMap);
     }
 
-    private persistQuestionBaseMap() {
-        AsyncStorage.setItem(this.BaseMapKey, JSON.stringify([...this._questionBaseMap]));
+    private async persistQuestionBaseMap() {
+        await AsyncStorage.setItem(
+            this.BaseMapKey,
+            JSON.stringify(
+                [...this._questionBaseMap.entries()].map(([id, base]) => [id, base.toJSON()])
+            )
+        );
     }
 
-
-    public Test() {
-        // this.AddBase("test");
+    public async GetBaseList() {
+        await this.ready();
+        return [...this._questionBaseMap.values()];
     }
 
-    public GetBaseList() {
-        return [...this._questionBaseMap];
+    public async GetBaseById(baseId: string) {
+        await this.ready();
+        return this._questionBaseMap.get(baseId);
     }
 
-    public AddBase(baseName:string) {
-        let q = new QuestionBase(baseName);
-        this._questionBaseMap.set(q.id, q);
-        this.persistQuestionBaseMap();
+    public async GetBaseByName(baseName: string) {
+        await this.ready();
+        return [...this._questionBaseMap.values()].find((base) => base.name === baseName);
     }
 
-    private clearQuestionBaseList() {
-        this._questionBaseMap.clear();
-        this.persistQuestionBaseMap();
+    public async HasBase(baseName: string) {
+        return (await this.GetBaseByName(baseName)) !== undefined;
     }
 
+    public async AddBase(baseName: string) {
+        await this.ready();
+        const questionBase = new QuestionBase(baseName.trim());
+        this._questionBaseMap.set(questionBase.id, questionBase);
+        await this.persistQuestionBaseMap();
+        this.onQuestionBaseMapUpdated.emit();
+        return questionBase;
+    }
+
+    public async RenameBase(baseId: string, newBaseName: string) {
+        await this.ready();
+        const targetBase = this._questionBaseMap.get(baseId);
+        if (!targetBase) {
+            return false;
+        }
+
+        targetBase.name = newBaseName.trim();
+        await this.persistQuestionBaseMap();
+        this.onQuestionBaseMapUpdated.emit();
+        return true;
+    }
+
+    public async RemoveBase(baseId: string) {
+        await this.ready();
+        const deleted = this._questionBaseMap.delete(baseId);
+        if (!deleted) {
+            return false;
+        }
+
+        await this.persistQuestionBaseMap();
+        this.onQuestionBaseMapUpdated.emit();
+        return true;
+    }
 }
-

@@ -1,9 +1,9 @@
 // EditChoiceDialog.tsx
+import { QuestionFactory } from '@/scripts/QuestionFactory/questionFactory';
 import { ChoiceQuestion, FillingQuestion, Question } from '@/scripts/questions';
 import * as React from 'react';
 import { View } from 'react-native';
 import { Button, Dialog, Divider, Menu, Portal, RadioButton, TextInput } from 'react-native-paper';
-import uuid from 'react-native-uuid';
 
 type QuestionType = 'choice' | 'filling';
 
@@ -18,10 +18,11 @@ interface EditQuestionDialogProps {
   onConfirm: (question: Question) => void;
   question: Question | null;
   baseName: string;
+  baseId: string;
 }
 
 // 主弹窗组件
-export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question, baseName }: EditQuestionDialogProps) => {
+export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question, baseName, baseId }: EditQuestionDialogProps) => {
   const [questionType, setQuestionType] = React.useState<QuestionType>('choice');
   const [menuVisible, setMenuVisible] = React.useState(false);
   const [currentQuestionWithStatus, setCurrentQuestionWithStatus] = React.useState<QuestionWithStatus>({
@@ -68,22 +69,21 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question, ba
 
     // 为新建题目补充ID（编辑模式已有ID）
     const finalQuestion = currentQuestionWithStatus.question.id ? currentQuestionWithStatus.question : (() => {
-      const id: string = uuid.v4() as string;
       if (currentQuestionWithStatus.question instanceof ChoiceQuestion) {
-        return new ChoiceQuestion(
-          currentQuestionWithStatus.question.text,
-          currentQuestionWithStatus.question.choices,
-          currentQuestionWithStatus.question.correctChoiceIndex,
-          id,
-          baseName
-        );
+        return QuestionFactory.createChoiceQuestion({
+          baseId,
+          baseName,
+          text: currentQuestionWithStatus.question.text,
+          choices: currentQuestionWithStatus.question.choices,
+          correctChoiceIndex: currentQuestionWithStatus.question.correctChoiceIndex,
+        });
       } else if (currentQuestionWithStatus.question instanceof FillingQuestion) {
-        return new FillingQuestion(
-          id,
-          currentQuestionWithStatus.question.text,
-          currentQuestionWithStatus.question.correctAnswer,
-          baseName
-        );
+        return QuestionFactory.createFillingQuestion({
+          baseId,
+          baseName,
+          text: currentQuestionWithStatus.question.text,
+          correctAnswer: currentQuestionWithStatus.question.correctAnswer,
+        });
       }
       // 兜底（理论上不会走到）
       return currentQuestionWithStatus.question;
@@ -155,6 +155,7 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question, ba
               initialQuestion={currentQuestionWithStatus.question as ChoiceQuestion | null}
               onUpdateQuestion={(status) => setCurrentQuestionWithStatus(status)}
               baseName={baseName}
+              baseId={baseId}
             />
           )}
 
@@ -163,6 +164,7 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question, ba
               initialQuestion={currentQuestionWithStatus.question as FillingQuestion | null}
               onUpdateQuestion={(status) => setCurrentQuestionWithStatus(status)}
               baseName={baseName}
+              baseId={baseId}
             />
           )}
         </Dialog.Content>
@@ -180,9 +182,10 @@ interface ChoiceQuestionEditorProps {
   initialQuestion: ChoiceQuestion | null;
   onUpdateQuestion: (status: QuestionWithStatus) => void;
   baseName: string;
+  baseId: string;
 }
 
-const ChoiceQuestionEditor: React.FC<ChoiceQuestionEditorProps> = ({ initialQuestion, onUpdateQuestion, baseName }) => {
+const ChoiceQuestionEditor: React.FC<ChoiceQuestionEditorProps> = ({ initialQuestion, onUpdateQuestion, baseName, baseId }) => {
   const [questionText, setQuestionText] = React.useState('');
   const [choices, setChoices] = React.useState(['', '', '', '']);
   const [selectedAnswer, setSelectedAnswer] = React.useState<string>('1');
@@ -233,13 +236,14 @@ const ChoiceQuestionEditor: React.FC<ChoiceQuestionEditorProps> = ({ initialQues
                     !!newAnswer;
 
     // 创建/更新题目对象
-    const choiceQuestion = new ChoiceQuestion(
-      newQuestionText.trim(),
-      newChoices.map(c => c.trim()),
-      Number.parseInt(newAnswer) || 0, // 兜底值，避免NaN
-      initialQuestion?.id || '', // 编辑模式带ID，新建模式为空
-      baseName
-    );
+    const choiceQuestion = QuestionFactory.createChoiceQuestion({
+      baseId,
+      baseName,
+      text: newQuestionText.trim(),
+      choices: newChoices.map(c => c.trim()),
+      correctChoiceIndex: Number.parseInt(newAnswer) || 0,
+      id: initialQuestion?.id,
+    });
 
     // 传递题目对象
     onUpdateQuestion({
@@ -313,9 +317,10 @@ interface FillingQuestionEditorProps {
   initialQuestion: FillingQuestion | null;
   onUpdateQuestion: (status: QuestionWithStatus) => void;
   baseName: string;
+  baseId: string;
 }
 
-const FillingQuestionEditor: React.FC<FillingQuestionEditorProps> = ({ initialQuestion, onUpdateQuestion, baseName }) => {
+const FillingQuestionEditor: React.FC<FillingQuestionEditorProps> = ({ initialQuestion, onUpdateQuestion, baseName, baseId }) => {
   const [questionText, setQuestionText] = React.useState('');
   const [answer, setAnswer] = React.useState('');
 
@@ -350,12 +355,13 @@ const FillingQuestionEditor: React.FC<FillingQuestionEditorProps> = ({ initialQu
     const isValid = !!newQuestionText.trim() && !!newAnswer.trim();
 
     // 创建/更新题目对象，保留用户输入
-    const fillingQuestion = new FillingQuestion(
-      initialQuestion?.id || '', // 编辑模式带ID，新建模式为空
-      newQuestionText.trim(),
-      newAnswer.trim(),
-      baseName
-    );
+    const fillingQuestion = QuestionFactory.createFillingQuestion({
+      baseId,
+      baseName,
+      text: newQuestionText.trim(),
+      correctAnswer: newAnswer.trim(),
+      id: initialQuestion?.id,
+    });
 
     // 传递题目对象
     onUpdateQuestion({

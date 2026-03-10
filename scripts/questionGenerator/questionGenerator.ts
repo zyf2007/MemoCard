@@ -1,27 +1,38 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ChoiceQuestion, Question, QuestionBaseManager } from "../questions";
-import { Func } from "../utils/FuncSystem";
+import { QuestionBaseManager } from "../questions";
+import { EventDispatcher } from "../utils/EventSystem";
 import { LazySingletonBase } from "../utils/LazySingletonBase";
 import { QuestionConfig, QuestionGeneratorConfig } from "./QuestionGeneratorConfig";
+
 const DEBUG_MODE = true;
 
 export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
-    //#region Init / Persist
     private readonly baseManager: QuestionBaseManager;
     private readonly config: QuestionGeneratorConfig = new QuestionGeneratorConfig();
     private readonly STORAGE_KEY = "QUESTION_GENERATOR";
+    private readonly readyPromise: Promise<void>;
+    private readonly _availableQuestionIdsTmp: string[] = [];
+
+    public onQuestionCountChanged = new EventDispatcher<[number]>();
+
     constructor() {
         super();
         this.baseManager = QuestionBaseManager.getInstance();
-        this.Init();
+        this.readyPromise = this.Init();
+    }
+
+    public async ready() {
+        await this.readyPromise;
     }
 
     private async Init() {
+        await this.baseManager.ready();
         const value = await AsyncStorage.getItem(this.STORAGE_KEY);
         const rawJson = value ? JSON.parse(value) : [];
         this.config.FromJson(rawJson);
+        await this.migrateLegacyEnabledQuestionBases(rawJson);
         await this.verifyQuestionBases();
-        this.updateAvailableQuestionList();
+        await this.updateAvailableQuestionList();
         this.subscribeEvents();
     }
 
@@ -29,72 +40,96 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
         await AsyncStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.config.ToJson()));
     }
 
+    private async migrateLegacyEnabledQuestionBases(rawJson: any) {
+        const legacyNames = Array.isArray(rawJson?.enabledQuestionBaseNames)
+            ? rawJson.enabledQuestionBaseNames as string[]
+            : [];
 
-    //#endregion Init / Persist
+        if (this.config.enabledQuestionBaseIds.size > 0 || legacyNames.length === 0) {
+            return;
+        }
 
-    //#region Event
-    public onQuestionCountChanged: Func<(count: number) => void> = new Func();
-    private subscribeEvents() {
-        this.baseManager.onQuestionBaseListUpdated.subscribe(() => this.verifyQuestionBases());
-        this.baseManager.onQuestionUpdated.subscribe(() => this.updateAvailableQuestionList());
+        const bases = await this.baseManager.getAllQuestionBases();
+        legacyNames.forEach((name) => {
+            bases
+                .filter((base) => base.baseName === name)
+                .forEach((base) => this.config.enabledQuestionBaseIds.add(base.baseId));
+        });
     }
-    //#endregion Event
 
-    //#region API
-    // test
-    public resetAllQuestions() {
+    private subscribeEvents() {
+        this.baseManager.onQuestionBaseListUpdated.on(() => {
+            void this.verifyQuestionBases();
+            void this.updateAvailableQuestionList();
+        });
+        this.baseManager.onQuestionUpdated.on(() => {
+            void this.updateAvailableQuestionList();
+        });
+    }
+
+    public async resetAllQuestions() {
+        await this.ready();
         this.config.questionData.clear();
         console.log("[QuestionGenerator] resetAllQuestions");
-        this.updateAvailableQuestionList();
+        await this.updateAvailableQuestionList();
     }
 
-    public async enableQuestionBase(questionBaseName: string) {
-        this.config.enabledQuestionBaseNames.add(questionBaseName);
-        this.updateAvailableQuestionList();
+    public async enableQuestionBase(questionBaseId: string) {
+        await this.ready();
+        this.config.enabledQuestionBaseIds.add(questionBaseId);
+        await this.updateAvailableQuestionList();
         await this.persistConfig();
     }
 
-    public async disableQuestionBase(questionBaseName: string) {
-        this.config.enabledQuestionBaseNames.delete(questionBaseName);
-        this.updateAvailableQuestionList();
+    public async disableQuestionBase(questionBaseId: string) {
+        await this.ready();
+        this.config.enabledQuestionBaseIds.delete(questionBaseId);
+        await this.updateAvailableQuestionList();
         await this.persistConfig();
     }
 
-
-    public isQuestionBaseEnabled(questionBaseName: string) {
-        return this.config.enabledQuestionBaseNames.has(questionBaseName);
-    }
-    public getEnabledQuestionBaseNames() {
-        return [...this.config.enabledQuestionBaseNames];
+    public isQuestionBaseEnabled(questionBaseId: string) {
+        return this.config.enabledQuestionBaseIds.has(questionBaseId);
     }
 
-    public getQuestion(index: number) {
-        return this._availableQuestionsTmp[index];
+    public getEnabledQuestionBaseIds() {
+        return [...this.config.enabledQuestionBaseIds];
     }
-    public finishQuestion(index: number, correct: boolean) {
-        this.config.questionData.get(this._availableQuestionsTmp[index].id)!.todayFinished = correct;
-        if (this.config.questionData.get(this._availableQuestionsTmp[index].id)!.weight > 1 &&
-            this.config.questionData.get(this._availableQuestionsTmp[index].id)!.weight < 10) {
+
+    public getQuestionId(index: number) {
+        return this._availableQuestionIdsTmp[index];
+    }
+
+    public async finishQuestion(index: number, correct: boolean) {
+        await this.ready();
+        const questionId = this._availableQuestionIdsTmp[index];
+        if (!questionId) {
+            return;
+        }
+
+        this.config.questionData.get(questionId)!.todayFinished = correct;
+        if (this.config.questionData.get(questionId)!.weight > 1 &&
+            this.config.questionData.get(questionId)!.weight < 10) {
             if (correct) {
-                this.config.questionData.get(this._availableQuestionsTmp[index].id)!.weight -= 1;
+                this.config.questionData.get(questionId)!.weight -= 1;
             } else {
-                this.config.questionData.get(this._availableQuestionsTmp[index].id)!.weight += 1;
+                this.config.questionData.get(questionId)!.weight += 1;
             }
         }
 
-        this.persistConfig();
-        console.log("[QuestionGenerator] finishQuestion ", this._availableQuestionsTmp[index].id, this.config.questionData.get(this._availableQuestionsTmp[index].id)!.todayFinished);
+        await this.persistConfig();
+        console.log("[QuestionGenerator] finishQuestion ", questionId, this.config.questionData.get(questionId)!.todayFinished);
     }
+
     public getAvailableQuestionCount() {
-        return this._availableQuestionsTmp.length;
+        return this._availableQuestionIdsTmp.length;
     }
-    //#endregion API
 
     private shuffleQuestionsByWeight(): void {
         const randomFactor = 1.5;
-        this._availableQuestionsTmp.sort((a, b) => {
-            const weightA = this.config.questionData.get(a.id)!.weight;
-            const weightB = this.config.questionData.get(b.id)!.weight;
+        this._availableQuestionIdsTmp.sort((a, b) => {
+            const weightA = this.config.questionData.get(a)!.weight;
+            const weightB = this.config.questionData.get(b)!.weight;
             const scoreA = weightA + (Math.random() - 0.5) * 2 * randomFactor;
             const scoreB = weightB + (Math.random() - 0.5) * 2 * randomFactor;
             return scoreB - scoreA;
@@ -102,37 +137,39 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
     }
 
     private async verifyQuestionBases() {
-        this.config.enabledQuestionBaseNames = new Set([...this.config.enabledQuestionBaseNames].filter((name) => this.baseManager.hasQuestionBase(name)));
-        await this.persistConfig();
+        await this.baseManager.ready();
+        this.config.enabledQuestionBaseIds = new Set(
+            [...this.config.enabledQuestionBaseIds].filter((id) => this.baseManager.getQuestionBaseById(id))
+        );
         if (DEBUG_MODE) {
-            console.log("[QuestionGenerator] verifyQuestionBases ", this.config.enabledQuestionBaseNames);
+            console.log("[QuestionGenerator] verifyQuestionBases ", this.config.enabledQuestionBaseIds);
         }
-    }
-    private readonly _availableQuestionsTmp: Question[] = [];
-    public updateAvailableQuestionList() {
-        this._availableQuestionsTmp.length = 0;
-        this.baseManager.getAllQuestionBases()
-            // 过滤出已启用的问题库
-            .filter(base => this.config.enabledQuestionBaseNames.has(base.baseName))
-            // 拿到所有问题
-            .flatMap(base => base.getRawQuestions())
-            // 拿到没有记录和今天还没做过的问题
-            .filter(q => {
-                console.log(q.id, this.config.questionData.has(q.id) && this.config.questionData.get(q.id)!.todayFinished)
-                return !(this.config.questionData.has(q.id) && this.config.questionData.get(q.id)!.todayFinished)
-            })
-            // 加入可以抽取的问题列表(如果是选择题就打乱顺序)
-            .map(question => { if(question.type === "choice") {this._availableQuestionsTmp.push((question as ChoiceQuestion).reSortOptions());}else {this._availableQuestionsTmp.push(question);} return question; })
-            // 在config中存入做题记录
-            .forEach((q) => { if (!this.config.questionData.has(q.id)) { this.config.questionData.set(q.id, new QuestionConfig(q.id)); } return q; })
-            
-        console.log("[QuestionGenerator] updateAvailableQuestionList ", this._availableQuestionsTmp.length, "Question(s)");
-        // 按权重随机排序
-        this.shuffleQuestionsByWeight();
-        // console.log("[QuestionGenerator] updateAvailableQuestionConfig ", this.config.questionData);
-        this.onQuestionCountChanged.invoke(this._availableQuestionsTmp.length);
-        this.persistConfig();
+        await this.persistConfig();
     }
 
-    
+    public async updateAvailableQuestionList() {
+        await this.baseManager.ready();
+        this._availableQuestionIdsTmp.length = 0;
+        const bases = await this.baseManager.getAllQuestionBases();
+        const enabledBases = bases.filter((base) => this.config.enabledQuestionBaseIds.has(base.baseId));
+        const questionLists = await Promise.all(enabledBases.map((base) => base.ensureQuestionsLoaded()));
+        const allQuestions = questionLists.flat();
+        const validQuestionIds = new Set(allQuestions.map((question) => question.id));
+        this.config.RemoveInvalidQuestions(validQuestionIds);
+
+        allQuestions
+            .filter((q) => !(this.config.questionData.has(q.id) && this.config.questionData.get(q.id)!.todayFinished))
+            .map((question) => question.id)
+            .forEach((questionId) => {
+                if (!this.config.questionData.has(questionId)) {
+                    this.config.questionData.set(questionId, new QuestionConfig(questionId));
+                }
+                this._availableQuestionIdsTmp.push(questionId);
+            });
+
+        console.log("[QuestionGenerator] updateAvailableQuestionList ", this._availableQuestionIdsTmp.length, "Question(s)");
+        this.shuffleQuestionsByWeight();
+        this.onQuestionCountChanged.emit(this._availableQuestionIdsTmp.length);
+        await this.persistConfig();
+    }
 }
