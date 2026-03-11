@@ -6,6 +6,7 @@ import { EventDispatcher } from "../utils/EventSystem";
 import { LazySingletonBase } from "../utils/LazySingletonBase";
 import { Question } from "./Question";
 import { QuestionBase } from "./QuestionBase";
+import { QuestionGenerator } from "../questionGenerator/questionGenerator";
 
 export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> {
     public onQuestionBaseListUpdated = new EventDispatcher();
@@ -120,6 +121,7 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
         const newBase = await this.baseLoader.AddBase(trimmedName);
         await this.questionLoader.SaveQuestionBase(newBase.id, []);
         await this.syncBaseCache();
+        await QuestionGenerator.getInstance().enableQuestionBase(newBase.id);
         return this.baseCache.get(newBase.id) || null;
     }
 
@@ -264,6 +266,7 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
             await this.questionLoader.SaveQuestionBase(newBaseMeta.id, validatedQuestions);
             await this.syncBaseCache();
             this.onQuestionUpdated.emit();
+            await QuestionGenerator.getInstance().enableQuestionBase(newBaseMeta.id);
 
             Alert.alert(
                 "导入成功",

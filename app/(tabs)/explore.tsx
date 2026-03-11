@@ -256,7 +256,7 @@ export default function StatisticsScreen() {
                 <Chip 
                   style={{ 
                     marginLeft: 8, 
-                    height: 28, 
+                    height: 30, 
                     backgroundColor: trendData[trendData.length - 1].accuracy >= trendData[0].accuracy 
                       ? theme.colors.secondaryContainer 
                       : theme.colors.errorContainer 
@@ -264,7 +264,9 @@ export default function StatisticsScreen() {
                   textStyle={{ 
                     color: trendData[trendData.length - 1].accuracy >= trendData[0].accuracy 
                       ? theme.colors.onSecondaryContainer 
-                      : theme.colors.onErrorContainer 
+                      : theme.colors.onErrorContainer,
+                    lineHeight: 18,
+                    includeFontPadding: false,
                   }}
                 >
                   {trendData[trendData.length - 1].accuracy >= trendData[0].accuracy ? '+' : ''}
@@ -453,7 +455,7 @@ export default function StatisticsScreen() {
               icon="chart-pie"
               style={{ backgroundColor: theme.colors.surfaceVariant, marginRight: 8 }}
               color={theme.colors.onSurfaceVariant}
-            />
+            /> 
             <Title style={{ color: theme.colors.onSurface }}>题库分布</Title>
           </View>
           <Paragraph style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16, fontSize: 14 }}>
