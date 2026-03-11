@@ -26,7 +26,9 @@ import {
 } from 'react-native-paper';
 
 const screenWidth = Dimensions.get('window').width;
-const chartWidth = screenWidth - 50;
+// Card has horizontal margin 16; Card.Content has horizontal padding 16.
+const cardWidth = screenWidth - 32;
+const contentWidth = screenWidth - 64;
 
 export default function StatisticsScreen() {
   const theme = useTheme();
@@ -106,6 +108,11 @@ export default function StatisticsScreen() {
     },
   };
 
+  const maxTotal =
+    trendData && trendData.length > 0
+      ? Math.max(...trendData.map((d: any) => d.total))
+      : 0;
+
   if (!achievements) return null;
 
   return (
@@ -181,7 +188,15 @@ export default function StatisticsScreen() {
       <Card style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 16, backgroundColor: theme.colors.surface }}>
         <Card.Content>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <Title style={{ color: theme.colors.onSurface }}>📈 正确率趋势</Title>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Avatar.Icon
+                size={24}
+                icon="chart-line"
+                style={{ backgroundColor: theme.colors.primaryContainer, marginRight: 8 }}
+                color={theme.colors.onPrimaryContainer}
+              />
+              <Title style={{ color: theme.colors.onSurface }}>正确率趋势</Title>
+            </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
               <Chip
                 selected={timeRange === 7}
@@ -203,27 +218,29 @@ export default function StatisticsScreen() {
           </View>
           
           {trendData && trendData.length > 0 && (
-            <LineChart
-              data={{
-                labels: trendData.map((d: any) => d.date.slice(5)),
-                datasets: [
-                  {
-                    data: trendData.map((d: any) => d.accuracy),
-                    color: (opacity = 1) => theme.colors.secondary,
-                    strokeWidth: 3,
-                  },
-                ],
-                legend: ['正确率 (%)'],
-              }}
-              width={chartWidth}
-              height={220}
-              chartConfig={accuracyChartConfig}
-              bezier
-              style={{ marginLeft: -25, borderRadius: 16 }}
-              yAxisSuffix="%"
-              yAxisInterval={20}
-              fromZero
-            />
+            <View style={styles.chartContainer}>
+              <LineChart
+                data={{
+                  labels: trendData.map((d: any) => d.date.slice(5)),
+                  datasets: [
+                    {
+                      data: trendData.map((d: any) => d.accuracy),
+                      color: (opacity = 1) => theme.colors.secondary,
+                      strokeWidth: 3,
+                    },
+                  ],
+                  legend: ['正确率 (%)'],
+                }}
+              width={cardWidth}
+                height={220}
+                chartConfig={accuracyChartConfig}
+                bezier
+              style={styles.lineChart}
+                yAxisSuffix="%"
+                yAxisInterval={20}
+                fromZero
+              />
+            </View>
           )}
           
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 12, padding: 12, backgroundColor: theme.colors.background, borderRadius: 12 }}>
@@ -263,7 +280,15 @@ export default function StatisticsScreen() {
 <Card style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 16, backgroundColor: theme.colors.surface }}>
   <Card.Content>
     <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-      <Title style={{ color: theme.colors.onSurface }}>📝 答题数量趋势</Title>
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Avatar.Icon
+          size={24}
+          icon="note-text"
+          style={{ backgroundColor: theme.colors.secondaryContainer, marginRight: 8 }}
+          color={theme.colors.onSecondaryContainer}
+        />
+        <Title style={{ color: theme.colors.onSurface }}>答题数量趋势</Title>
+      </View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <Chip
           selected={timeRange === 7}
@@ -285,34 +310,39 @@ export default function StatisticsScreen() {
     </View>
     
     {trendData && trendData.length > 0 && (
-      <LineChart
-        data={{
-          labels: trendData.map((d: any) => d.date.slice(5)),
-          datasets: [
-            {
-              data: trendData.map((d: any) => d.total),
-              color: (opacity = 1) => theme.colors.primary,
-              strokeWidth: 3,
+      <View style={styles.chartContainer}>
+        <LineChart
+          data={{
+            labels: trendData.map((d: any) => d.date.slice(5)),
+            datasets: [
+              {
+                data: trendData.map((d: any) => d.total),
+                color: (opacity = 1) => theme.colors.primary,
+                strokeWidth: 3,
+              },
+            ],
+            legend: ['答题数量'],
+          }}
+        width={cardWidth}
+          height={220}
+          chartConfig={{
+            ...chartConfig,
+            color: (opacity = 1) => theme.colors.primary,
+            propsForDots: {
+              r: '4',
+              strokeWidth: '2',
+              stroke: theme.colors.primary,
             },
-          ],
-          legend: ['答题数量'],
-        }}
-        width={chartWidth}
-        height={220}
-        chartConfig={{
-          ...chartConfig,
-          color: (opacity = 1) => theme.colors.primary,
-          propsForDots: {
-            r: '4',
-            strokeWidth: '2',
-            stroke: theme.colors.primary,
-          },
-        }}
-        bezier
-        style={{ marginLeft: -28, borderRadius: 16 }}
-        yAxisInterval={Math.ceil(Math.max(...trendData.map((d: any) => d.total)) / 5)}
-        fromZero
-      />
+          }}
+          bezier
+          style={styles.lineChart}
+          segments={4}
+          formatYLabel={(v) =>
+            maxTotal <= 5 ? Number(v).toFixed(1) : Number(v).toFixed(0)
+          }
+          fromZero
+        />
+      </View>
     )}
     
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 12, padding: 12, backgroundColor: theme.colors.background, borderRadius: 12 }}>
@@ -338,7 +368,15 @@ export default function StatisticsScreen() {
       {/* 进步最快题库排行榜 */}
       <Card style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 16, backgroundColor: theme.colors.surface }}>
         <Card.Content>
-          <Title style={{ color: theme.colors.onSurface }}>🚀 正确率提升</Title>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <Avatar.Icon
+              size={24}
+              icon="rocket-launch"
+              style={{ backgroundColor: theme.colors.tertiaryContainer, marginRight: 8 }}
+              color={theme.colors.onTertiaryContainer}
+            />
+            <Title style={{ color: theme.colors.onSurface }}>正确率提升</Title>
+          </View>
           <Paragraph style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16, fontSize: 14 }}>
             最近7天正确率提升最快的题库
           </Paragraph>
@@ -409,23 +447,33 @@ export default function StatisticsScreen() {
       {/* 题库分布饼图 */}
       <Card style={{ marginHorizontal: 16, marginBottom: 16, borderRadius: 16, backgroundColor: theme.colors.surface }}>
         <Card.Content>
-          <Title style={{ color: theme.colors.onSurface }}>🎯 题库分布</Title>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+            <Avatar.Icon
+              size={24}
+              icon="chart-pie"
+              style={{ backgroundColor: theme.colors.surfaceVariant, marginRight: 8 }}
+              color={theme.colors.onSurfaceVariant}
+            />
+            <Title style={{ color: theme.colors.onSurface }}>题库分布</Title>
+          </View>
           <Paragraph style={{ color: theme.colors.onSurfaceVariant, marginBottom: 16, fontSize: 14 }}>
             各题库做题数量占比
           </Paragraph>
           
           {baseDistribution.length > 0 ? (
-            <PieChart
-              data={baseDistribution}
-              width={chartWidth}
-              height={200}
-              chartConfig={chartConfig}
-              accessor="population"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              absolute
-              style={{ marginHorizontal: -10, borderRadius: 16 }}
-            />
+            <View style={styles.pieContainer}>
+              <PieChart
+                data={baseDistribution}
+                width={contentWidth}
+                height={200}
+                chartConfig={chartConfig}
+                accessor="population"
+                backgroundColor="transparent"
+                paddingLeft="8"
+                absolute
+                style={{ borderRadius: 16, alignSelf: 'center' }}
+              />
+            </View>
           ) : (
             <View style={{ padding: 32, alignItems: 'center' }}>
               <Text style={{ color: theme.colors.onSurfaceDisabled }}>暂无数据，开始你的第一题吧！</Text>
@@ -447,6 +495,21 @@ export default function StatisticsScreen() {
 }
 
 const styles = StyleSheet.create({
+  chartContainer: {
+    marginHorizontal: -16,
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  pieContainer: {
+    borderRadius: 16,
+    overflow: 'hidden',
+    paddingVertical: 8,
+  },
+  lineChart: {
+    borderRadius: 16,
+    marginLeft: -12,
+    marginRight: 12,
+  },
   fullScreenLoading: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
