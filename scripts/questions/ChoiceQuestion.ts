@@ -1,11 +1,10 @@
-import uuid from 'react-native-uuid';
 import { Question } from "./Question";
 export class ChoiceQuestion extends Question {
     public readonly choices: string[];
     public readonly correctChoiceIndex: number;
 
-    constructor( text: string, choices: string[], correctChoiceIndex: number, id?: string, frombase: string = "undefined") {
-        super(id ?? (uuid.v1() as string), text, frombase);
+    constructor( text: string, choices: string[], correctChoiceIndex: number, id: string, frombase: string = "undefined") {
+        super(id, text, frombase);
 
         if (!Array.isArray(choices) || choices.length !== 4) {
             throw new Error("选择题选项必须有且仅有4个");

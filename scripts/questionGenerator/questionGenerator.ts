@@ -100,6 +100,52 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
         return this._availableQuestionIdsTmp[index];
     }
 
+    public getConfigSnapshot() {
+        return {
+            randomFactor: this.config.randomFactor,
+            weightMin: this.config.weightMin,
+            weightMax: this.config.weightMax,
+            initialWeight: this.config.initialWeight,
+        };
+    }
+
+    public async updateGeneratorConfig(config: {
+        randomFactor?: number;
+        weightMin?: number;
+        weightMax?: number;
+        initialWeight?: number;
+    }) {
+        await this.ready();
+        let shouldClampWeights = false;
+        if (typeof config.randomFactor === "number") {
+            this.config.randomFactor = Math.max(0, config.randomFactor);
+        }
+        if (typeof config.weightMin === "number") {
+            this.config.weightMin = Math.max(1, Math.floor(config.weightMin));
+            shouldClampWeights = true;
+        }
+        if (typeof config.weightMax === "number") {
+            this.config.weightMax = Math.max(1, Math.floor(config.weightMax));
+            shouldClampWeights = true;
+        }
+        if (this.config.weightMax < this.config.weightMin) {
+            const temp = this.config.weightMax;
+            this.config.weightMax = this.config.weightMin;
+            this.config.weightMin = temp;
+            shouldClampWeights = true;
+        }
+        if (typeof config.initialWeight === "number") {
+            const initial = Math.floor(config.initialWeight);
+            this.config.initialWeight = this.clamp(initial, this.config.weightMin, this.config.weightMax);
+        }
+        if (shouldClampWeights) {
+            this.config.questionData.forEach((value) => {
+                value.weight = this.clamp(value.weight, this.config.weightMin, this.config.weightMax);
+            });
+        }
+        await this.persistConfig();
+    }
+
     public async finishQuestion(index: number, correct: boolean) {
         await this.ready();
         const questionId = this._availableQuestionIdsTmp[index];
@@ -107,14 +153,12 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
             return;
         }
 
-        this.config.questionData.get(questionId)!.todayFinished = correct;
-        if (this.config.questionData.get(questionId)!.weight > 1 &&
-            this.config.questionData.get(questionId)!.weight < 10) {
-            if (correct) {
-                this.config.questionData.get(questionId)!.weight -= 1;
-            } else {
-                this.config.questionData.get(questionId)!.weight += 1;
-            }
+        const questionConfig = this.config.questionData.get(questionId)!;
+        questionConfig.todayFinished = correct;
+        if (correct) {
+            questionConfig.weight = this.clamp(questionConfig.weight - 1, this.config.weightMin, this.config.weightMax);
+        } else {
+            questionConfig.weight = this.clamp(questionConfig.weight + 1, this.config.weightMin, this.config.weightMax);
         }
 
         await this.persistConfig();
@@ -126,7 +170,7 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
     }
 
     private shuffleQuestionsByWeight(): void {
-        const randomFactor = 1.5;
+        const randomFactor = this.config.randomFactor;
         this._availableQuestionIdsTmp.sort((a, b) => {
             const weightA = this.config.questionData.get(a)!.weight;
             const weightB = this.config.questionData.get(b)!.weight;
@@ -162,7 +206,7 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
             .map((question) => question.id)
             .forEach((questionId) => {
                 if (!this.config.questionData.has(questionId)) {
-                    this.config.questionData.set(questionId, new QuestionConfig(questionId));
+                    this.config.questionData.set(questionId, new QuestionConfig(questionId, this.config.initialWeight));
                 }
                 this._availableQuestionIdsTmp.push(questionId);
             });
@@ -171,5 +215,9 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
         this.shuffleQuestionsByWeight();
         this.onQuestionCountChanged.emit(this._availableQuestionIdsTmp.length);
         await this.persistConfig();
+    }
+
+    private clamp(value: number, min: number, max: number) {
+        return Math.min(Math.max(value, min), max);
     }
 }

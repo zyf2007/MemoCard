@@ -33,16 +33,10 @@ export default function TabViewExample() {
           />
           <Text variant="titleMedium" style={{ marginTop: 16, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>通用</Text>
           <List.Item
-            title="答题设置"
-            description="管理可能出现的题型，做题方式等"
-            left={props => <List.Icon {...props} icon="checkbox-multiple-marked" style={{ transform: [{ scale: 0.9 }], marginLeft: 17 }} />}
-            onPress={() => console.log('Pressed3')}
-          />
-          <List.Item
             title="出题设置"
             description="管理出题规则等"
             left={props => <List.Icon {...props} icon="file-question" />}
-            onPress={() => console.log('Pressed4')}
+            onPress={() => router.push("/settings/questionGenerator")}
           />
           <List.Item
             title="关于应用"
@@ -58,4 +52,3 @@ export default function TabViewExample() {
     </FadeInTab>
   );
 }
-
