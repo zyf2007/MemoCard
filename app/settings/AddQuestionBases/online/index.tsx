@@ -2,6 +2,7 @@ import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvi
 import { OnlineQuestionBaseCatalogItem, OnlineQuestionBaseRepositoryManager } from '@/scripts/onlineQuestionBases';
 import { router } from 'expo-router';
 import * as React from 'react';
+import { OverflowMarqueeText } from '@/components/ui/OverflowMarqueeText';
 import { ScrollView, View } from 'react-native';
 import { ActivityIndicator, Appbar, List, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -66,7 +67,9 @@ export default function OnlineQuestionBaseCatalogPage() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <Appbar.Header mode="small">
           <Appbar.BackAction onPress={() => router.back()} />
-          <Appbar.Content title="浏览在线题库" />
+          <Appbar.Content
+            title={(<View style={{ flexShrink: 1, minWidth: 0 }}><OverflowMarqueeText text="浏览在线题库" style={[theme.fonts.titleLarge, { color: theme.colors.onSurface }]} /></View>)}
+          />
           <Appbar.Action icon="refresh" onPress={() => void loadCatalog(true)} />
           <Appbar.Action icon="cog" onPress={() => router.push('/settings/AddQuestionBases/online/repositories')} />
         </Appbar.Header>

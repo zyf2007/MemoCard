@@ -8,6 +8,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
+import { OverflowMarqueeText } from '@/components/ui/OverflowMarqueeText';
 import { Alert, FlatList, NativeScrollEvent, NativeSyntheticEvent, Platform, View } from 'react-native';
 import { AnimatedFAB, Appbar, Searchbar, Text } from 'react-native-paper';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
@@ -288,7 +289,9 @@ export default function ImportQuestionBase() {
     <Material3ThemeProvider>
       <Appbar.Header mode="small">
         <Appbar.BackAction onPress={() => router.back()} />
-        <Appbar.Content title={"编辑题库 - " + baseName} />
+        <Appbar.Content
+          title={(<View style={{ flexShrink: 1, minWidth: 0 }}><OverflowMarqueeText text={"编辑题库 - " + baseName} style={[theme.fonts.titleLarge, { color: theme.colors.onSurface }]} /></View>)}
+        />
         <Appbar.Action
           icon="magnify"
           onPress={handleSearchPressed}

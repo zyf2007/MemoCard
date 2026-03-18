@@ -5,6 +5,7 @@ import { OnlineQuestionBaseRepositoryManager } from '@/scripts/onlineQuestionBas
 import { parseQuestionBaseTransferJson, Question, QuestionBaseManager } from '@/scripts/questions';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
+import { OverflowMarqueeText } from '@/components/ui/OverflowMarqueeText';
 import { Alert, FlatList, View } from 'react-native';
 import { ActivityIndicator, Appbar, Button, Text } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -109,7 +110,9 @@ export default function OnlineQuestionBasePreviewPage() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <Appbar.Header mode="small">
           <Appbar.BackAction onPress={() => router.back()} />
-          <Appbar.Content title="预览在线题库" />
+          <Appbar.Content
+            title={(<View style={{ flexShrink: 1, minWidth: 0 }}><OverflowMarqueeText text="预览在线题库" style={[theme.fonts.titleLarge, { color: theme.colors.onSurface }]} /></View>)}
+          />
           <Appbar.Action icon="refresh" onPress={() => void loadPreview()} />
         </Appbar.Header>
 

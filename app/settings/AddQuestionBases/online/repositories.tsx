@@ -2,6 +2,7 @@ import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvi
 import { OnlineQuestionBaseRepositoryManager } from '@/scripts/onlineQuestionBases';
 import { router } from 'expo-router';
 import * as React from 'react';
+import { OverflowMarqueeText } from '@/components/ui/OverflowMarqueeText';
 import { View } from 'react-native';
 import { Appbar, Button, Dialog, IconButton, List, Portal, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -50,7 +51,9 @@ export default function OnlineRepositoryManagePage() {
       <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
         <Appbar.Header mode="small">
           <Appbar.BackAction onPress={() => router.back()} />
-          <Appbar.Content title="管理在线仓库" />
+          <Appbar.Content
+            title={(<View style={{ flexShrink: 1, minWidth: 0 }}><OverflowMarqueeText text="管理在线仓库" style={[theme.fonts.titleLarge, { color: theme.colors.onSurface }]} /></View>)}
+          />
           <Appbar.Action icon="plus" onPress={() => setAddDialogVisible(true)} />
         </Appbar.Header>
         <View style={{ flex: 1 }}>

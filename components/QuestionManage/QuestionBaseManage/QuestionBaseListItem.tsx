@@ -1,4 +1,5 @@
 import { Material3Switch } from '@/components/materialSwitch';
+import { OverflowMarqueeText } from '@/components/ui/OverflowMarqueeText';
 import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
 import { router } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -38,7 +39,12 @@ export const QuestionBaseItem: React.FC<QuestionBaseItemProps> = ({
   return (
     <List.Item
       key={name}
-      title={name}
+      title={() => (
+        <OverflowMarqueeText
+          text={name}
+          style={[theme.fonts.titleLarge, { color: theme.colors.onSurface }]}
+        />
+      )}
       description={metaText}
       titleStyle={theme.fonts.titleLarge}
       style={{ marginBottom: -10 }}
