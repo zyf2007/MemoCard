@@ -62,6 +62,9 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
             void this.verifyQuestionBases();
             void this.updateAvailableQuestionList();
         });
+        this.baseManager.onQuestionBaseCreated.on((baseId) => {
+            void this.enableQuestionBase(baseId);
+        });
         this.baseManager.onQuestionUpdated.on(() => {
             void this.updateAvailableQuestionList();
         });

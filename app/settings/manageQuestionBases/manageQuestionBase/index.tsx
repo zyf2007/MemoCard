@@ -4,9 +4,11 @@ import { QuestionListItem } from '@/components/QuestionManage/QuestionList/Quest
 import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvider';
 import { ChoiceQuestion, FillingQuestion, Question, QuestionBaseManager } from '@/scripts/questions';
 import { useScrollToTop } from '@react-navigation/native';
+import * as Clipboard from 'expo-clipboard';
+import * as FileSystem from 'expo-file-system/legacy';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
-import { FlatList, NativeScrollEvent, NativeSyntheticEvent, View } from 'react-native';
+import { Alert, FlatList, NativeScrollEvent, NativeSyntheticEvent, Platform, View } from 'react-native';
 import { AnimatedFAB, Appbar, Searchbar, Text } from 'react-native-paper';
 import Animated, { useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 // 选择题列表项目组件（保留 memo 优化）
@@ -164,6 +166,104 @@ export default function ImportQuestionBase() {
     }
   };
 
+  const buildExportJson = React.useCallback(() => {
+    if (!questionBase) {
+      return null;
+    }
+
+    return JSON.stringify(
+      {
+        baseName: questionBase.baseName,
+        questions: allQuestions.map((question) => question.toJSON()),
+      },
+      null,
+      2
+    );
+  }, [allQuestions, questionBase]);
+
+  const buildExportFileName = React.useCallback(() => {
+    const safeBaseName = (baseName || 'question-base').replace(/[\\/:*?"<>|]/g, '_');
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    return `${safeBaseName}-${timestamp}.json`;
+  }, [baseName]);
+
+  const exportToClipboard = React.useCallback(async () => {
+    const jsonContent = buildExportJson();
+    if (!jsonContent) {
+      Alert.alert('导出失败', '当前题库不存在，无法导出');
+      return;
+    }
+
+    await Clipboard.setStringAsync(jsonContent);
+    Alert.alert('导出成功', '题库 JSON 已复制到剪贴板');
+  }, [buildExportJson]);
+
+  const exportToFile = React.useCallback(async () => {
+    const jsonContent = buildExportJson();
+    if (!jsonContent) {
+      Alert.alert('导出失败', '当前题库不存在，无法导出');
+      return;
+    }
+
+    const fileName = buildExportFileName();
+
+    try {
+      if (Platform.OS === 'android') {
+        const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+        if (!permissions.granted) {
+          return;
+        }
+
+        const targetFileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+          permissions.directoryUri,
+          fileName,
+          'application/json'
+        );
+
+        await FileSystem.writeAsStringAsync(targetFileUri, jsonContent, {
+          encoding: FileSystem.EncodingType.UTF8,
+        });
+
+        Alert.alert('导出成功', `已导出到文件：${fileName}`);
+        return;
+      }
+
+      if (!FileSystem.documentDirectory) {
+        Alert.alert('导出失败', '当前设备不支持文件导出目录');
+        return;
+      }
+
+      const targetFileUri = `${FileSystem.documentDirectory}${fileName}`;
+      await FileSystem.writeAsStringAsync(targetFileUri, jsonContent, {
+        encoding: FileSystem.EncodingType.UTF8,
+      });
+      Alert.alert('导出成功', `已导出到：${targetFileUri}`);
+    } catch (error) {
+      Alert.alert('导出失败', `写入文件失败：${(error as Error).message}`);
+    }
+  }, [buildExportFileName, buildExportJson]);
+
+  const handleExportPressed = React.useCallback(() => {
+    Alert.alert('导出题库 JSON', '请选择导出方式', [
+      {
+        text: '导出到文件',
+        onPress: () => {
+          void exportToFile();
+        },
+      },
+      {
+        text: '复制到剪贴板',
+        onPress: () => {
+          void exportToClipboard();
+        },
+      },
+      {
+        text: '取消',
+        style: 'cancel',
+      },
+    ]);
+  }, [exportToClipboard, exportToFile]);
+
   // 创建搜索框折叠动画样式
   const animatedSearchContainerStyle = useAnimatedStyle(() => {
     return {
@@ -186,6 +286,11 @@ export default function ImportQuestionBase() {
         <Appbar.Action
           icon="magnify"
           onPress={handleSearchPressed}
+          color={theme.colors.onSurface}
+        />
+        <Appbar.Action
+          icon="export-variant"
+          onPress={handleExportPressed}
           color={theme.colors.onSurface}
         />
       </Appbar.Header>
