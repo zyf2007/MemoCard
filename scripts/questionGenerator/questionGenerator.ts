@@ -5,6 +5,9 @@ import { LazySingletonBase } from "../utils/LazySingletonBase";
 import { QuestionConfig, QuestionGeneratorConfig } from "./QuestionGeneratorConfig";
 
 const DEBUG_MODE = true;
+const WEIGHT_MIN = 1;
+const WEIGHT_MAX = 10;
+const INITIAL_WEIGHT = 6;
 
 export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
     private readonly baseManager: QuestionBaseManager;
@@ -106,45 +109,15 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
     public getConfigSnapshot() {
         return {
             randomFactor: this.config.randomFactor,
-            weightMin: this.config.weightMin,
-            weightMax: this.config.weightMax,
-            initialWeight: this.config.initialWeight,
         };
     }
 
     public async updateGeneratorConfig(config: {
         randomFactor?: number;
-        weightMin?: number;
-        weightMax?: number;
-        initialWeight?: number;
     }) {
         await this.ready();
-        let shouldClampWeights = false;
         if (typeof config.randomFactor === "number") {
             this.config.randomFactor = Math.max(0, config.randomFactor);
-        }
-        if (typeof config.weightMin === "number") {
-            this.config.weightMin = Math.max(1, Math.floor(config.weightMin));
-            shouldClampWeights = true;
-        }
-        if (typeof config.weightMax === "number") {
-            this.config.weightMax = Math.max(1, Math.floor(config.weightMax));
-            shouldClampWeights = true;
-        }
-        if (this.config.weightMax < this.config.weightMin) {
-            const temp = this.config.weightMax;
-            this.config.weightMax = this.config.weightMin;
-            this.config.weightMin = temp;
-            shouldClampWeights = true;
-        }
-        if (typeof config.initialWeight === "number") {
-            const initial = Math.floor(config.initialWeight);
-            this.config.initialWeight = this.clamp(initial, this.config.weightMin, this.config.weightMax);
-        }
-        if (shouldClampWeights) {
-            this.config.questionData.forEach((value) => {
-                value.weight = this.clamp(value.weight, this.config.weightMin, this.config.weightMax);
-            });
         }
         await this.persistConfig();
     }
@@ -159,9 +132,9 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
         const questionConfig = this.config.questionData.get(questionId)!;
         questionConfig.todayFinished = correct;
         if (correct) {
-            questionConfig.weight = this.clamp(questionConfig.weight - 1, this.config.weightMin, this.config.weightMax);
+            questionConfig.weight = this.clamp(questionConfig.weight - 1, WEIGHT_MIN, WEIGHT_MAX);
         } else {
-            questionConfig.weight = this.clamp(questionConfig.weight + 1, this.config.weightMin, this.config.weightMax);
+            questionConfig.weight = this.clamp(questionConfig.weight + 1, WEIGHT_MIN, WEIGHT_MAX);
         }
 
         await this.persistConfig();
@@ -209,8 +182,13 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
             .map((question) => question.id)
             .forEach((questionId) => {
                 if (!this.config.questionData.has(questionId)) {
-                    this.config.questionData.set(questionId, new QuestionConfig(questionId, this.config.initialWeight));
+                    this.config.questionData.set(questionId, new QuestionConfig(questionId, INITIAL_WEIGHT));
                 }
+                this.config.questionData.get(questionId)!.weight = this.clamp(
+                    this.config.questionData.get(questionId)!.weight,
+                    WEIGHT_MIN,
+                    WEIGHT_MAX
+                );
                 this._availableQuestionIdsTmp.push(questionId);
             });
 

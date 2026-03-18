@@ -15,9 +15,6 @@ export class QuestionGeneratorConfig {
     public enabledQuestionBaseIds: Set<string> = new Set();
     public questionData:Map<string,QuestionConfig> = new Map();
     public randomFactor: number = 1.5;
-    public weightMin: number = 1;
-    public weightMax: number = 10;
-    public initialWeight: number = 6;
     FromJson(json: any) {
         console.log("[QuestionGeneratorPersisted] FromJson ", json.enabledQuestionBaseIds);
         this.enabledQuestionBaseIds = new Set(json.enabledQuestionBaseIds || []);
@@ -25,9 +22,6 @@ export class QuestionGeneratorConfig {
         console.log(this.questionData) 
         this.lastInitTime = json.lastInitTime;
         this.randomFactor = typeof json.randomFactor === "number" ? json.randomFactor : 1.5;
-        this.weightMin = typeof json.weightMin === "number" ? json.weightMin : 1;
-        this.weightMax = typeof json.weightMax === "number" ? json.weightMax : 10;
-        this.initialWeight = typeof json.initialWeight === "number" ? json.initialWeight : 6;
         console.log("[QuestionGeneratorConfig] LoadedFromJson LastInitTime", this.lastInitTime);
 
         if (new Date().toDateString() !== this.lastInitTime) {
@@ -46,9 +40,6 @@ export class QuestionGeneratorConfig {
             flatQuestionData: [...this.questionData],
             lastInitTime: this.lastInitTime,
             randomFactor: this.randomFactor,
-            weightMin: this.weightMin,
-            weightMax: this.weightMax,
-            initialWeight: this.initialWeight,
         };
     }
 
