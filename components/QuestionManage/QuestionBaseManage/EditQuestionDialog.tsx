@@ -1,4 +1,5 @@
 // EditChoiceDialog.tsx
+import DismissKeyboardView from '@/components/ui/DismissKeyboardView';
 import { QuestionFactory } from '@/scripts/QuestionFactory/questionFactory';
 import { ChoiceQuestion, FillingQuestion, Question } from '@/scripts/questions';
 import * as React from 'react';
@@ -116,6 +117,7 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question, ba
         <Dialog.Icon icon="file-document-edit" />
         <Dialog.Title>{question ? '编辑题目' : '创建题目'}</Dialog.Title>
         <Dialog.Content>
+          <DismissKeyboardView>
           {/* 题型选择 Menu */}
           {!question && (
             <View style={{ marginBottom: 16 }}>
@@ -167,6 +169,7 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question, ba
               baseId={baseId}
             />
           )}
+          </DismissKeyboardView>
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={onDismiss}>取消</Button>

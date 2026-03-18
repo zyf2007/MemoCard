@@ -1,8 +1,8 @@
 // index.tsx
-import { EditQuestionDialog } from '@/components/QuestionManage/QuestionBaseManage/EditChoiceQuestionDialog';
+import { EditQuestionDialog } from '@/components/QuestionManage/QuestionBaseManage/EditQuestionDialog';
 import { QuestionListItem } from '@/components/QuestionManage/QuestionList/QuestionListItem';
 import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvider';
-import { ChoiceQuestion, FillingQuestion, Question, QuestionBaseManager } from '@/scripts/questions';
+import { buildQuestionBaseTransferPayload, ChoiceQuestion, FillingQuestion, Question, QuestionBaseManager } from '@/scripts/questions';
 import { useScrollToTop } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -172,10 +172,7 @@ export default function ImportQuestionBase() {
     }
 
     return JSON.stringify(
-      {
-        baseName: questionBase.baseName,
-        questions: allQuestions.map((question) => question.toJSON()),
-      },
+      buildQuestionBaseTransferPayload(questionBase.baseName, allQuestions),
       null,
       2
     );

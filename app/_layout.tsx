@@ -45,6 +45,8 @@ export default function RootLayout() {
               <Stack.Screen name="settings/manageQuestionBases/manageQuestionBase/index" options={{ headerShown: false, title: '编辑题库' }} />
               <Stack.Screen name="settings/questionGenerator/index" options={{ headerShown: false, title: '出题设置' }} />
               <Stack.Screen name="settings/AddQuestionBases/index" options={{ headerShown: false, title: '选择添加题库的方式' }} />
+              <Stack.Screen name="settings/AddQuestionBases/online/index" options={{ headerShown: false, title: '浏览在线题库' }} />
+              <Stack.Screen name="settings/AddQuestionBases/online/preview" options={{ headerShown: false, title: '预览在线题库' }} />
 
             </Stack>
           </Material3ThemeProvider>
@@ -56,5 +58,4 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
-
 

@@ -1,9 +1,10 @@
 import { FillingQuestion } from "@/scripts/questions/FillingQuestion";
-import { type ComponentRef, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
-import { Keyboard, Platform, Pressable, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { Keyboard, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { MathText } from "react-native-latex-text";
 import { Button, Text, TextInput } from 'react-native-paper';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
+import DismissKeyboardView from "../ui/DismissKeyboardView";
 import FullQuestionDialog from "./fullQuestionDialog";
 
 export interface FillingCardProps {
@@ -18,7 +19,10 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
     const [fullQuestionDialogVisible, setFullQuestionDialogVisible] = useState<boolean>(false);
     const [questionTextHeight, setQuestionTextHeight] = useState<number>(0);
     const [questionAreaHeight, setQuestionAreaHeight] = useState<number>(0);
-    const answerInputRef = useRef<ComponentRef<typeof TextInput> | null>(null);
+    const answerInputRef = useRef<{ blur?: () => void } | null>(null);
+    const setAnswerInputRef = (instance: unknown) => {
+        answerInputRef.current = instance as { blur?: () => void } | null;
+    };
     const dismissKeyboard = () => {
         Keyboard.dismiss();
         answerInputRef.current?.blur?.();
@@ -103,8 +107,7 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
     });
 
     return (
-        <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
-        <View style={{ flex: 1, justifyContent: 'space-between' }}>
+        <DismissKeyboardView style={{ flex: 1, justifyContent: 'space-between' }} onDismiss={dismissKeyboard}>
 
             {/* 题型标题 */}
             <View style={{ margin: 20, marginBottom: 0, flexDirection: "row", justifyContent: "space-between" }} >
@@ -126,7 +129,7 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
             {/* 答案输入区域 */}
             <View style={{ marginHorizontal: 20 }}>
                 <TextInput
-                    ref={answerInputRef}
+                    ref={setAnswerInputRef}
                     mode="outlined"
                     label="请输入答案"
                     value={userAnswer}
@@ -188,8 +191,7 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
                 visible={fullQuestionDialogVisible}
                 onDismiss={() => setFullQuestionDialogVisible(false)}
             />
-        </View>
-        </TouchableWithoutFeedback>
+        </DismissKeyboardView>
     );
 });
 

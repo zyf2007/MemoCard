@@ -6,6 +6,7 @@ import { EventDispatcher } from "../utils/EventSystem";
 import { LazySingletonBase } from "../utils/LazySingletonBase";
 import { Question } from "./Question";
 import { QuestionBase } from "./QuestionBase";
+import { parseQuestionBaseTransferJson } from "./questionBaseTransfer";
 
 export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> {
     public onQuestionBaseListUpdated = new EventDispatcher();
@@ -172,96 +173,30 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
         await this.ready();
 
         try {
-            let rawData: any;
-            try {
-                rawData = JSON.parse(jsonStr);
-            } catch (parseError) {
-                throw new Error(`JSON格式错误：${(parseError as Error).message}`);
-            }
-
-            if (!rawData.baseName || typeof rawData.baseName !== "string" || rawData.baseName.trim() === "") {
-                throw new Error("题库名称（baseName）不能为空，且必须为字符串类型");
-            }
-            if (!Array.isArray(rawData.questions)) {
-                throw new Error("题目列表（questions）必须为数组类型");
-            }
-            if (rawData.questions.length === 0) {
-                throw new Error("题目列表（questions）不能为空，请至少包含1道题目");
-            }
-
-            const baseName = rawData.baseName.trim();
+            const payload = parseQuestionBaseTransferJson(jsonStr);
+            const baseName = payload.baseName;
 
             const newBaseMeta = await this.baseLoader.AddBase(baseName);
-            const validatedQuestions: Question[] = [];
-            let invalidCount = 0;
-
-            for (let i = 0; i < rawData.questions.length; i++) {
-                const question = rawData.questions[i];
-                const questionIndex = i + 1;
-
-                try {
-                    if (typeof question !== "object" || question === null) {
-                        throw new Error("非对象类型");
-                    }
-                    if (!question.text || typeof question.text !== "string" || question.text.trim() === "") {
-                        throw new Error("题干（text）不能为空，且必须为字符串类型");
-                    }
-                    if (!question.type || !["choice", "filling"].includes(question.type)) {
-                        throw new Error(`类型（type）必须为"choice"（选择题）或"filling"（填空题）`);
-                    }
-
-                    if (question.type === "choice") {
-                        if (!Array.isArray(question.choices) || question.choices.length !== 4) {
-                            throw new Error("选择题必须包含4个选项（choices数组长度必须为4）");
-                        }
-                        for (let j = 0; j < question.choices.length; j++) {
-                            if (typeof question.choices[j] !== "string" || question.choices[j].trim() === "") {
-                                throw new Error(`选择题第${j + 1}个选项不能为空，且必须为字符串类型`);
-                            }
-                        }
-                        if (typeof question.correctChoiceIndex !== "number" ||
-                            question.correctChoiceIndex < 1 ||
-                            question.correctChoiceIndex > 4) {
-                            throw new Error("选择题正确答案索引（correctChoiceIndex）必须为1-4之间的数字");
-                        }
-
-                        validatedQuestions.push(
-                            QuestionFactory.createChoiceQuestion({
-                                baseId: newBaseMeta.id,
-                                baseName,
-                                text: question.text.trim(),
-                                choices: question.choices.map((choice: string) => choice.trim()),
-                                correctChoiceIndex: question.correctChoiceIndex,
-                            })
-                        );
-                    } else {
-                        if (!question.correctAnswer || typeof question.correctAnswer !== "string" || question.correctAnswer.trim() === "") {
-                            throw new Error("填空题正确答案（correctAnswer）不能为空，且必须为字符串类型");
-                        }
-
-                        validatedQuestions.push(
-                            QuestionFactory.createFillingQuestion({
-                                baseId: newBaseMeta.id,
-                                baseName,
-                                text: question.text.trim(),
-                                correctAnswer: question.correctAnswer.trim(),
-                            })
-                        );
-                    }
-                } catch (questionError) {
-                    invalidCount++;
-                    Alert.alert(
-                        `第${questionIndex}题校验失败`,
-                        (questionError as Error).message,
-                        [{ text: "知道了" }]
-                    );
+            const validatedQuestions: Question[] = payload.questions.map((question) => {
+                if (question.type === "choice") {
+                    return QuestionFactory.createChoiceQuestion({
+                        baseId: newBaseMeta.id,
+                        baseName,
+                        text: question.text,
+                        choices: question.choices,
+                        correctChoiceIndex: question.correctChoiceIndex,
+                        id: question.id,
+                    });
                 }
-            }
 
-            if (invalidCount === rawData.questions.length) {
-                await this.baseLoader.RemoveBase(newBaseMeta.id);
-                throw new Error("所有题目均校验失败，终止题库导入");
-            }
+                return QuestionFactory.createFillingQuestion({
+                    baseId: newBaseMeta.id,
+                    baseName,
+                    text: question.text,
+                    correctAnswer: question.correctAnswer,
+                    id: question.id,
+                });
+            });
 
             await this.questionLoader.SaveQuestionBase(newBaseMeta.id, validatedQuestions);
             await this.syncBaseCache();
@@ -270,7 +205,7 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
 
             Alert.alert(
                 "导入成功",
-                `题库「${baseName}」创建成功！\n有效题目数：${validatedQuestions.length}道\n无效题目数：${invalidCount}道`
+                `题库「${baseName}」创建成功！\n有效题目数：${validatedQuestions.length}道`
             );
             return true;
         } catch (error) {
