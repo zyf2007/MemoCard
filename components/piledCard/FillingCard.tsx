@@ -1,6 +1,6 @@
 import { FillingQuestion } from "@/scripts/questions/FillingQuestion";
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
-import { KeyboardAvoidingView, Pressable, StyleSheet, View } from 'react-native';
+import { type ComponentRef, forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { Keyboard, Platform, Pressable, StyleSheet, TouchableWithoutFeedback, View } from 'react-native';
 import { MathText } from "react-native-latex-text";
 import { Button, Text, TextInput } from 'react-native-paper';
 import { useAppTheme } from '../../hooks/Material3ThemeProvider';
@@ -18,6 +18,11 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
     const [fullQuestionDialogVisible, setFullQuestionDialogVisible] = useState<boolean>(false);
     const [questionTextHeight, setQuestionTextHeight] = useState<number>(0);
     const [questionAreaHeight, setQuestionAreaHeight] = useState<number>(0);
+    const answerInputRef = useRef<ComponentRef<typeof TextInput> | null>(null);
+    const dismissKeyboard = () => {
+        Keyboard.dismiss();
+        answerInputRef.current?.blur?.();
+    };
     const Reset = () => {
         setUserAnswer('');
         setShowResult(false);
@@ -28,6 +33,17 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
     }));
 
     useEffect(() => Reset(), [props.question]);
+    useEffect(() => {
+        const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+        const hideSub = Keyboard.addListener(hideEvent, () => {
+            answerInputRef.current?.blur?.();
+        });
+
+        return () => {
+            hideSub.remove();
+        };
+    }, []);
 
     // 提交答案
     const handleSubmit = () => {
@@ -87,6 +103,7 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
     });
 
     return (
+        <TouchableWithoutFeedback onPress={dismissKeyboard} accessible={false}>
         <View style={{ flex: 1, justifyContent: 'space-between' }}>
 
             {/* 题型标题 */}
@@ -107,8 +124,9 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
             {questionAreaHeight < questionTextHeight ? <Text style={{ alignSelf: 'center', marginTop: -16, marginBottom: 10, color: theme.colors.secondary }}>↑点击题目查看完整题目↑</Text> : null}
 
             {/* 答案输入区域 */}
-            <KeyboardAvoidingView behavior='padding' style={{ marginHorizontal: 20 }}>
+            <View style={{ marginHorizontal: 20 }}>
                 <TextInput
+                    ref={answerInputRef}
                     mode="outlined"
                     label="请输入答案"
                     value={userAnswer}
@@ -126,7 +144,7 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
                         )
                     ) : undefined}
                 />
-            </KeyboardAvoidingView>
+            </View>
 
 
             {/* 底部区域：提交按钮和结果 */}
@@ -171,6 +189,7 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
                 onDismiss={() => setFullQuestionDialogVisible(false)}
             />
         </View>
+        </TouchableWithoutFeedback>
     );
 });
 
