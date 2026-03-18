@@ -11,14 +11,12 @@ export interface QuestionBaseTransferMeta {
 
 export type QuestionBaseTransferQuestion =
   | {
-      id?: string;
       text: string;
       type: "choice";
       choices: string[];
       correctChoiceIndex: number;
     }
   | {
-      id?: string;
       text: string;
       type: "filling";
       correctAnswer: string;
@@ -96,9 +94,9 @@ export function parseQuestionBaseTransferPayload(rawData: unknown): ParsedQuesti
     const text = ensureNonEmptyString(item.text, `第${index + 1}题校验失败：题干（text）不能为空，且必须为字符串类型`);
     const type = item.type;
 
-    const id = item.id !== undefined
-      ? ensureNonEmptyString(item.id, `第${index + 1}题校验失败：题目ID（id）必须为非空字符串`)
-      : undefined;
+    if (item.id !== undefined) {
+      throw new Error(`第${index + 1}题校验失败：题目不允许包含 id 字段`);
+    }
 
     if (type === "choice") {
       if (!Array.isArray(item.choices) || item.choices.length !== 4) {
@@ -118,7 +116,6 @@ export function parseQuestionBaseTransferPayload(rawData: unknown): ParsedQuesti
       }
 
       return {
-        id,
         text,
         type: "choice" as const,
         choices,
@@ -132,7 +129,6 @@ export function parseQuestionBaseTransferPayload(rawData: unknown): ParsedQuesti
         `第${index + 1}题校验失败：填空题正确答案（correctAnswer）不能为空，且必须为字符串类型`
       );
       return {
-        id,
         text,
         type: "filling" as const,
         correctAnswer,

@@ -9,6 +9,7 @@ import { IconButton, List } from 'react-native-paper';
 export interface QuestionBaseItemProps {
   id: string;
   name: string;          // 题库名称
+  metaText?: string;
   theme: any;            // 主题对象
   onDeletePress: () => void; // 删除按钮点击回调
 }
@@ -17,6 +18,7 @@ export interface QuestionBaseItemProps {
 export const QuestionBaseItem: React.FC<QuestionBaseItemProps> = ({
   id,
   name,
+  metaText,
   theme,
   onDeletePress
 }) => {
@@ -37,6 +39,7 @@ export const QuestionBaseItem: React.FC<QuestionBaseItemProps> = ({
     <List.Item
       key={name}
       title={name}
+      description={metaText}
       titleStyle={theme.fonts.titleLarge}
       style={{ marginBottom: -10 }}
       left={props => (

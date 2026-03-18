@@ -42,7 +42,7 @@ export interface OnlineQuestionBaseCatalogItem extends OnlineQuestionBaseIndexIt
 
 const DEFAULT_REPOSITORY: OnlineQuestionBaseRepositoryConfig = {
   id: "default-community",
-  name: "官方社区题库",
+  name: "示例在线题库仓库",
   repoUrl: "https://github.com/zyf2007/MemoCard-QuestionBases",
   branch: "main",
   indexPath: "index.json",
@@ -64,6 +64,16 @@ function ensureOptionalString(value: unknown): string | undefined {
   }
   const trimmed = value.trim();
   return trimmed === "" ? undefined : trimmed;
+}
+
+function isGithubRepoUrl(url: string) {
+  return /^https?:\/\/github\.com\/[^/]+\/[^/]+(?:\.git|\/)?$/i.test(url.trim());
+}
+
+function joinUrl(baseUrl: string, path: string) {
+  const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
+  const normalizedPath = path.replace(/^\/+/, "");
+  return `${normalizedBase}${normalizedPath}`;
 }
 
 export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<OnlineQuestionBaseRepositoryManager> {
@@ -102,7 +112,7 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
       }
     }
 
-    if (this.repositories.length === 0) {
+    if (repoConfigJson === null) {
       this.repositories = [DEFAULT_REPOSITORY];
       await this.persistRepositories();
     }
@@ -216,9 +226,6 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
     await this.ready();
     this.repositories = this.repositories.filter((repo) => repo.id !== repoId);
     delete this.indexCache[repoId];
-    if (this.repositories.length === 0) {
-      this.repositories = [DEFAULT_REPOSITORY];
-    }
     await Promise.all([this.persistRepositories(), this.persistIndexCache()]);
   }
 
@@ -314,6 +321,23 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
     return response.text();
   }
 
+  public getQuestionBaseDownloadUrl(repoId: string, itemId: string) {
+    const repo = this.repositories.find((item) => item.id === repoId);
+    if (!repo) {
+      return null;
+    }
+    const cacheItem = this.indexCache[repoId];
+    if (!cacheItem) {
+      return null;
+    }
+    const questionBase = cacheItem.index.questionBases.find((item) => item.id === itemId);
+    if (!questionBase) {
+      return null;
+    }
+
+    return this.buildQuestionBaseFileUrl(repo, questionBase);
+  }
+
   private buildCatalogItems(cacheMap: Record<string, OnlineQuestionBaseIndexCacheItem>) {
     const items: OnlineQuestionBaseCatalogItem[] = [];
     for (const repo of this.repositories) {
@@ -338,17 +362,22 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
     if (githubRepoMatch) {
       return `${githubRepoMatch[1]}/${githubRepoMatch[2]}`;
     }
-    return undefined;
+    try {
+      const parsed = new URL(repoUrl);
+      return parsed.host;
+    } catch {
+      return undefined;
+    }
   }
 
   private buildIndexUrl(repo: OnlineQuestionBaseRepositoryConfig) {
-    const rawPrefix = this.buildRawPrefix(repo);
-    if (!rawPrefix) {
-      return repo.repoUrl;
+    const repoUrl = repo.repoUrl.trim();
+    if (repoUrl.toLowerCase().endsWith(".json")) {
+      return repoUrl;
     }
 
-    const normalizedIndexPath = repo.indexPath.replace(/^\/+/, "");
-    return `${rawPrefix}${normalizedIndexPath}`;
+    const basePrefix = this.buildFileBasePrefix(repo);
+    return joinUrl(basePrefix, repo.indexPath);
   }
 
   private buildQuestionBaseFileUrl(repo: OnlineQuestionBaseRepositoryConfig, item: OnlineQuestionBaseIndexItem) {
@@ -356,18 +385,31 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
       return item.downloadUrl;
     }
 
-    const rawPrefix = this.buildRawPrefix(repo);
-    if (!rawPrefix || !item.filePath) {
+    if (!item.filePath) {
       return null;
     }
 
-    return `${rawPrefix}${item.filePath.replace(/^\/+/, "")}`;
+    const basePrefix = this.buildFileBasePrefix(repo);
+    return joinUrl(basePrefix, item.filePath);
   }
 
-  private buildRawPrefix(repo: OnlineQuestionBaseRepositoryConfig) {
+  private buildFileBasePrefix(repo: OnlineQuestionBaseRepositoryConfig) {
+    const repoUrl = repo.repoUrl.trim();
+    if (repoUrl.toLowerCase().endsWith(".json")) {
+      const lastSlashIndex = repoUrl.lastIndexOf("/");
+      if (lastSlashIndex > "https://".length) {
+        return repoUrl.slice(0, lastSlashIndex + 1);
+      }
+      return repoUrl;
+    }
+
+    if (!isGithubRepoUrl(repoUrl)) {
+      return repoUrl.endsWith("/") ? repoUrl : `${repoUrl}/`;
+    }
+
     const githubRepoMatch = repo.repoUrl.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git|\/)?$/i);
     if (!githubRepoMatch) {
-      return null;
+      return repoUrl.endsWith("/") ? repoUrl : `${repoUrl}/`;
     }
 
     const owner = githubRepoMatch[1];

@@ -54,7 +54,6 @@ export default function OnlineQuestionBasePreviewPage() {
             text: question.text,
             choices: question.choices,
             correctChoiceIndex: question.correctChoiceIndex,
-            id: question.id,
           });
         }
         return QuestionFactory.createFillingQuestion({
@@ -62,7 +61,6 @@ export default function OnlineQuestionBasePreviewPage() {
           baseName: previewBaseName,
           text: question.text,
           correctAnswer: question.correctAnswer,
-          id: question.id,
         });
       });
 
@@ -91,14 +89,20 @@ export default function OnlineQuestionBasePreviewPage() {
 
     setImporting(true);
     try {
-      const imported = await QuestionBaseManager.getInstance().importQuestionBaseFromJson(rawJson);
+      const subscriptionUrl = repoId && itemId ? manager.getQuestionBaseDownloadUrl(repoId, itemId) : null;
+      const catalogItem = repoId && itemId ? manager.getCatalogItem(repoId, itemId) : null;
+      const imported = await QuestionBaseManager.getInstance().importQuestionBaseFromJson(rawJson, {
+        importedFrom: catalogItem ? `在线仓库：${catalogItem.repoName}` : '在线仓库',
+        subscriptionUrl: subscriptionUrl || undefined,
+        subscriptionLabel: catalogItem?.baseName || undefined,
+      });
       if (imported) {
         router.back();
       }
     } finally {
       setImporting(false);
     }
-  }, [rawJson]);
+  }, [itemId, manager, rawJson, repoId]);
 
   return (
     <Material3ThemeProvider>

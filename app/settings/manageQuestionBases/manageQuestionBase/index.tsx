@@ -261,6 +261,15 @@ export default function ImportQuestionBase() {
     ]);
   }, [exportToClipboard, exportToFile]);
 
+  const handleSubscriptionRefresh = React.useCallback(async () => {
+    if (!questionBase) {
+      Alert.alert('更新失败', '当前题库不存在');
+      return;
+    }
+    await questionBaseManager.refreshSubscribedQuestionBase(questionBase.baseId);
+    await refreshQuestionList();
+  }, [questionBase, questionBaseManager, refreshQuestionList]);
+
   // 创建搜索框折叠动画样式
   const animatedSearchContainerStyle = useAnimatedStyle(() => {
     return {
@@ -290,6 +299,13 @@ export default function ImportQuestionBase() {
           onPress={handleExportPressed}
           color={theme.colors.onSurface}
         />
+        {questionBase?.meta.subscriptionUrl ? (
+          <Appbar.Action
+            icon="sync"
+            onPress={() => void handleSubscriptionRefresh()}
+            color={theme.colors.onSurface}
+          />
+        ) : null}
       </Appbar.Header>
 
       {/* 搜索框 */}

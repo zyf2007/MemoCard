@@ -1,4 +1,4 @@
-import { generateMD5 } from "../utils/CryptoUtils";
+import { generateQuestionId } from "../utils/IdGenerator";
 import { ChoiceQuestion } from "../questions/ChoiceQuestion";
 import { FillingQuestion } from "../questions/FillingQuestion";
 import { Question } from "../questions/Question";
@@ -25,7 +25,7 @@ export type QuestionStorageData =
 
 export class QuestionFactory {
   public static createQuestionId(baseId: string, seed: string) {
-    return `${baseId}${generateMD5(`${seed}${new Date().toISOString()}`).slice(0, 8)}`;
+    return generateQuestionId(baseId, seed);
   }
 
   public static createChoiceQuestion(params: {

@@ -11,7 +11,7 @@ export default function ManageQuestionBases() {
     const theme = useAppTheme();
     const [deleteDialogVisible, setDeleteDialogVisible] = React.useState(false);
     const [selectedBase, setSelectedBase] = React.useState<{ id: string; name: string } | null>(null);
-    const [questionBaseList, setQuestionBaseList] = React.useState<Array<{ id: string; name: string }>>([]);
+    const [questionBaseList, setQuestionBaseList] = React.useState<Array<{ id: string; name: string; meta: { author?: string; importedFrom?: string; subscriptionLabel?: string } }>>([]);
     const questionBaseManager = QuestionBaseManager.getInstance<QuestionBaseManager>();
 
     React.useEffect(() => {
@@ -40,6 +40,20 @@ export default function ManageQuestionBases() {
         setDeleteDialogVisible(true);
     };
 
+    const buildMetaText = (base: { meta: { author?: string; importedFrom?: string; subscriptionLabel?: string } }) => {
+        const metaParts: string[] = [];
+        if (base.meta.author) {
+            metaParts.push(`作者：${base.meta.author}`);
+        }
+        if (base.meta.importedFrom) {
+            metaParts.push(`来源：${base.meta.importedFrom}`);
+        }
+        if (base.meta.subscriptionLabel) {
+            metaParts.push(`订阅：${base.meta.subscriptionLabel}`);
+        }
+        return metaParts.length > 0 ? metaParts.join(" · ") : undefined;
+    };
+
     return (
         <Material3ThemeProvider>
             <View style={{ backgroundColor: theme.colors.surfaceContainer, flex: 1 }}>
@@ -56,6 +70,7 @@ export default function ManageQuestionBases() {
                                     key={base.id}
                                     id={base.id}
                                     name={base.name}
+                                    metaText={buildMetaText(base)}
                                     theme={theme}
                                     onDeletePress={() => handleItemDeletePress(base)}
                                 />

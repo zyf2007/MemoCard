@@ -4,7 +4,7 @@
 
 ## 1. 仓库目录结构
 
-推荐结构如下：
+推荐结构如下（GitHub 仓库或普通 Web 目录都可）：
 
 ```text
 <repo-root>/
@@ -39,6 +39,17 @@
 
 `filePath` 与 `downloadUrl` 至少提供一个。
 
+## 2.1 仓库地址配置规则
+
+应用支持以下仓库地址写法：
+
+- GitHub 仓库地址：`https://github.com/<owner>/<repo>`
+  应用会自动映射到 `raw.githubusercontent.com` 拉取 JSON 文件。
+- 普通 Web 目录地址：`https://example.com/memocards/`
+  应用会按 `<仓库地址>/<indexPath>` 拉取索引，并按 `filePath` 拼接题库文件地址。
+- 直接索引地址：`https://example.com/memocards/index.json`
+  应用会直接拉取该索引，并以其所在目录作为 `filePath` 的基地址。
+
 示例：
 
 ```json
@@ -67,6 +78,8 @@
 - `baseName`: `string`，题库名称。
 - `meta`: `object`（可选）。
 - `questions`: `array`，题目列表。
+
+注意：题目项禁止包含 `id` 字段，`id` 由应用内规则生成。
 
 `meta` 字段：
 
@@ -122,5 +135,4 @@
 
 ## 4. 兼容说明
 
-- 导入时兼容旧数据中题目包含 `id` 的情况。
-- 导出时不再包含每道题的 `id`。
+- 导出不包含每道题的 `id`。

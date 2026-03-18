@@ -42,7 +42,9 @@ export default function ImportQuestionBase() {
 
         setImporting(true);
         try {
-            await QuestionBaseManager.getInstance().importQuestionBaseFromJson(text);
+            await QuestionBaseManager.getInstance().importQuestionBaseFromJson(text, {
+                importedFrom: '剪贴板',
+            });
         } finally {
             setImporting(false);
         }
@@ -65,7 +67,9 @@ export default function ImportQuestionBase() {
             const jsonContent = await FileSystem.readAsStringAsync(fileUri, {
                 encoding: FileSystem.EncodingType.UTF8,
             });
-            await QuestionBaseManager.getInstance().importQuestionBaseFromJson(jsonContent);
+            await QuestionBaseManager.getInstance().importQuestionBaseFromJson(jsonContent, {
+                importedFrom: '本地文件',
+            });
         } catch (error) {
             Alert.alert('导入失败', `读取文件失败：${(error as Error).message}`);
         } finally {
@@ -91,7 +95,11 @@ export default function ImportQuestionBase() {
                 throw new Error(`请求失败（${response.status}）`);
             }
             const jsonContent = await response.text();
-            await QuestionBaseManager.getInstance().importQuestionBaseFromJson(jsonContent);
+            await QuestionBaseManager.getInstance().importQuestionBaseFromJson(jsonContent, {
+                importedFrom: '链接导入',
+                subscriptionUrl: url,
+                subscriptionLabel: url,
+            });
         } catch (error) {
             Alert.alert('导入失败', `链接导入失败：${(error as Error).message}`);
         } finally {

@@ -1,7 +1,13 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { EventDispatcher } from "../utils/EventSystem";
 import { LazySingletonBase } from "../utils/LazySingletonBase";
-import { QuestionBase } from "./QuestionBase";
+import { QuestionBase, QuestionBaseMetaInfo } from "./QuestionBase";
+
+type StoredQuestionBase = {
+    id?: string;
+    name: string;
+    meta?: QuestionBaseMetaInfo;
+};
 
 export class QuestionBaseLoader extends LazySingletonBase<QuestionBaseLoader> {
     readonly BaseMapKey = "QuestionBaseMap";
@@ -20,9 +26,9 @@ export class QuestionBaseLoader extends LazySingletonBase<QuestionBaseLoader> {
 
     private async loadQuestionBaseMap() {
         const questionBaseMapString = await AsyncStorage.getItem(this.BaseMapKey) || "[]";
-        const questionList = JSON.parse(questionBaseMapString) as Array<[string, { id: string; name: string }]>;
+        const questionList = JSON.parse(questionBaseMapString) as Array<[string, StoredQuestionBase]>;
         this._questionBaseMap = new Map(
-            questionList.map(([id, rawBase]) => [id, new QuestionBase(rawBase.name, rawBase.id || id)])
+            questionList.map(([id, rawBase]) => [id, new QuestionBase(rawBase.name, rawBase.id || id, rawBase.meta)])
         );
         console.log("[QuestionBaseLoader] LoadedQuestionBaseMap", this._questionBaseMap);
     }
@@ -55,9 +61,9 @@ export class QuestionBaseLoader extends LazySingletonBase<QuestionBaseLoader> {
         return (await this.GetBaseByName(baseName)) !== undefined;
     }
 
-    public async AddBase(baseName: string) {
+    public async AddBase(baseName: string, meta?: QuestionBaseMetaInfo) {
         await this.ready();
-        const questionBase = new QuestionBase(baseName.trim());
+        const questionBase = new QuestionBase(baseName.trim(), undefined, meta);
         this._questionBaseMap.set(questionBase.id, questionBase);
         await this.persistQuestionBaseMap();
         this.onQuestionBaseMapUpdated.emit();
@@ -72,6 +78,22 @@ export class QuestionBaseLoader extends LazySingletonBase<QuestionBaseLoader> {
         }
 
         targetBase.name = newBaseName.trim();
+        await this.persistQuestionBaseMap();
+        this.onQuestionBaseMapUpdated.emit();
+        return true;
+    }
+
+    public async UpdateBaseMeta(baseId: string, metaPatch: Partial<QuestionBaseMetaInfo>) {
+        await this.ready();
+        const targetBase = this._questionBaseMap.get(baseId);
+        if (!targetBase) {
+            return false;
+        }
+
+        targetBase.meta = {
+            ...targetBase.meta,
+            ...metaPatch,
+        };
         await this.persistQuestionBaseMap();
         this.onQuestionBaseMapUpdated.emit();
         return true;

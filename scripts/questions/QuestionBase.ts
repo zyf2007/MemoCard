@@ -1,7 +1,7 @@
-import { QuestionBase as QuestionBaseMeta } from "../QuestionLoader/QuestionBase";
+import { QuestionBase as QuestionBaseMeta, QuestionBaseMetaInfo } from "../QuestionLoader/QuestionBase";
 import { QuestionLoader } from "../QuestionLoader/QuestionLoader";
-import { generateMD5 } from "../utils/CryptoUtils";
 import { EventDispatcher } from "../utils/EventSystem";
+import { generateDeterministicQuestionId } from "../utils/IdGenerator";
 import { ChoiceQuestion } from "./ChoiceQuestion";
 import { FillingQuestion } from "./FillingQuestion";
 import { Question } from "./Question";
@@ -9,6 +9,7 @@ import { Question } from "./Question";
 export class QuestionBase {
     private _baseName: string;
     private readonly _baseId: string;
+    private _meta: QuestionBaseMetaInfo;
     private _questions: Question[] = [];
     private hasLoadedQuestions = false;
 
@@ -17,6 +18,7 @@ export class QuestionBase {
     constructor(meta: QuestionBaseMeta) {
         this._baseName = meta.name;
         this._baseId = meta.id;
+        this._meta = { ...(meta.meta || {}) };
     }
 
     public get baseName(): string {
@@ -29,6 +31,10 @@ export class QuestionBase {
 
     public get questions(): Question[] {
         return [...this._questions];
+    }
+
+    public get meta(): QuestionBaseMetaInfo {
+        return { ...this._meta };
     }
 
     public async ensureQuestionsLoaded(forceReload: boolean = false) {
@@ -78,6 +84,10 @@ export class QuestionBase {
         this._baseName = newName.trim();
     }
 
+    public setMeta(meta: QuestionBaseMetaInfo) {
+        this._meta = { ...(meta || {}) };
+    }
+
     public getRawQuestions(): Question[] {
         return [...this._questions];
     }
@@ -103,9 +113,9 @@ export class QuestionBase {
             }
 
             hasMigration = true;
-            let migratedId = `${this._baseId}${generateMD5(`${question.id}`).slice(0, 8)}`;
+            let migratedId = generateDeterministicQuestionId(this._baseId, `${question.id}`);
             while (usedIds.has(migratedId)) {
-                migratedId = `${this._baseId}${generateMD5(`${question.id}-${index}-${usedIds.size}`).slice(0, 8)}`;
+                migratedId = generateDeterministicQuestionId(this._baseId, `${question.id}-${index}-${usedIds.size}`);
             }
             usedIds.add(migratedId);
 

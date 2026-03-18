@@ -7,6 +7,13 @@ import { LazySingletonBase } from "../utils/LazySingletonBase";
 import { Question } from "./Question";
 import { QuestionBase } from "./QuestionBase";
 import { parseQuestionBaseTransferJson } from "./questionBaseTransfer";
+import { QuestionBaseMetaInfo } from "../QuestionLoader/QuestionBase";
+
+export interface QuestionBaseImportOptions {
+    importedFrom?: string;
+    subscriptionUrl?: string;
+    subscriptionLabel?: string;
+}
 
 export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> {
     public onQuestionBaseListUpdated = new EventDispatcher();
@@ -48,6 +55,7 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
             const cachedBase = this.baseCache.get(base.id);
             if (cachedBase) {
                 cachedBase.rename(base.name);
+                cachedBase.setMeta(base.meta || {});
                 continue;
             }
 
@@ -79,8 +87,8 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
         return [...this.baseCache.values()].map((item) => item.baseName);
     }
 
-    public getQuestionBaseList(): Array<{ id: string; name: string }> {
-        return [...this.baseCache.values()].map((item) => ({ id: item.baseId, name: item.baseName }));
+    public getQuestionBaseList(): Array<{ id: string; name: string; meta: QuestionBaseMetaInfo }> {
+        return [...this.baseCache.values()].map((item) => ({ id: item.baseId, name: item.baseName, meta: item.meta }));
     }
 
     public getQuestionBaseByName(baseName: string): QuestionBase | undefined {
@@ -169,14 +177,22 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
         return true;
     }
 
-    public async importQuestionBaseFromJson(jsonStr: string): Promise<boolean> {
+    public async importQuestionBaseFromJson(jsonStr: string, options?: QuestionBaseImportOptions): Promise<boolean> {
         await this.ready();
 
         try {
             const payload = parseQuestionBaseTransferJson(jsonStr);
             const baseName = payload.baseName;
+            const author = payload.meta.author?.trim();
+            const mergedMeta: QuestionBaseMetaInfo = {
+                ...(author ? { author } : {}),
+                ...(options?.importedFrom?.trim() ? { importedFrom: options.importedFrom.trim() } : {}),
+                ...(options?.subscriptionUrl?.trim() ? { subscriptionUrl: options.subscriptionUrl.trim() } : {}),
+                ...(options?.subscriptionLabel?.trim() ? { subscriptionLabel: options.subscriptionLabel.trim() } : {}),
+                ...(options?.subscriptionUrl?.trim() ? { lastSyncedAt: new Date().toISOString() } : {}),
+            };
 
-            const newBaseMeta = await this.baseLoader.AddBase(baseName);
+            const newBaseMeta = await this.baseLoader.AddBase(baseName, mergedMeta);
             const validatedQuestions: Question[] = payload.questions.map((question) => {
                 if (question.type === "choice") {
                     return QuestionFactory.createChoiceQuestion({
@@ -185,7 +201,6 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
                         text: question.text,
                         choices: question.choices,
                         correctChoiceIndex: question.correctChoiceIndex,
-                        id: question.id,
                     });
                 }
 
@@ -194,7 +209,6 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
                     baseName,
                     text: question.text,
                     correctAnswer: question.correctAnswer,
-                    id: question.id,
                 });
             });
 
@@ -210,6 +224,63 @@ export class QuestionBaseManager extends LazySingletonBase<QuestionBaseManager> 
             return true;
         } catch (error) {
             Alert.alert("导入失败", `解析或创建题库时出错：${(error as Error).message}`);
+            return false;
+        }
+    }
+
+    public async refreshSubscribedQuestionBase(baseId: string): Promise<boolean> {
+        await this.ready();
+        const targetBase = this.getQuestionBaseById(baseId);
+        if (!targetBase) {
+            Alert.alert("更新失败", "未找到当前题库");
+            return false;
+        }
+
+        const subscriptionUrl = targetBase.meta.subscriptionUrl?.trim();
+        if (!subscriptionUrl) {
+            Alert.alert("更新失败", "当前题库没有订阅链接");
+            return false;
+        }
+
+        try {
+            const response = await fetch(subscriptionUrl);
+            if (!response.ok) {
+                throw new Error(`请求失败（${response.status}）`);
+            }
+
+            const content = await response.text();
+            const payload = parseQuestionBaseTransferJson(content);
+            const validatedQuestions: Question[] = payload.questions.map((question) => {
+                if (question.type === "choice") {
+                    return QuestionFactory.createChoiceQuestion({
+                        baseId: targetBase.baseId,
+                        baseName: targetBase.baseName,
+                        text: question.text,
+                        choices: question.choices,
+                        correctChoiceIndex: question.correctChoiceIndex,
+                    });
+                }
+
+                return QuestionFactory.createFillingQuestion({
+                    baseId: targetBase.baseId,
+                    baseName: targetBase.baseName,
+                    text: question.text,
+                    correctAnswer: question.correctAnswer,
+                });
+            });
+
+            await this.questionLoader.SaveQuestionBase(targetBase.baseId, validatedQuestions);
+            await this.baseLoader.UpdateBaseMeta(targetBase.baseId, {
+                ...(payload.meta.author?.trim() ? { author: payload.meta.author.trim() } : {}),
+                lastSyncedAt: new Date().toISOString(),
+            });
+
+            await this.syncBaseCache();
+            this.onQuestionUpdated.emit();
+            Alert.alert("更新成功", `已更新题库，共 ${validatedQuestions.length} 道题`);
+            return true;
+        } catch (error) {
+            Alert.alert("更新失败", `订阅更新失败：${(error as Error).message}`);
             return false;
         }
     }

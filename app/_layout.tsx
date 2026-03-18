@@ -47,6 +47,7 @@ export default function RootLayout() {
               <Stack.Screen name="settings/AddQuestionBases/index" options={{ headerShown: false, title: '选择添加题库的方式' }} />
               <Stack.Screen name="settings/AddQuestionBases/online/index" options={{ headerShown: false, title: '浏览在线题库' }} />
               <Stack.Screen name="settings/AddQuestionBases/online/preview" options={{ headerShown: false, title: '预览在线题库' }} />
+              <Stack.Screen name="settings/AddQuestionBases/online/repositories" options={{ headerShown: false, title: '管理在线仓库' }} />
 
             </Stack>
           </Material3ThemeProvider>
@@ -58,4 +59,3 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
-
