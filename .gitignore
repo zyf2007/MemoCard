@@ -46,3 +46,8 @@ app-example
 
 .vscode/
 .marscode/
+
+# local upload artifacts
+demoOnlineBase/
+upload_demoOnlineBase_ftp.sh
+upload_latest_apk_ftp.sh

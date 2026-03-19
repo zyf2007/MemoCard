@@ -6,7 +6,7 @@ import { EventDispatcher } from "../utils/EventSystem";
 import { LazySingletonBase } from "../utils/LazySingletonBase";
 import { Question } from "./Question";
 import { QuestionBase } from "./QuestionBase";
-import { parseQuestionBaseTransferJson } from "./questionBaseTransfer";
+import { parseQuestionBaseTransferJson } from "../questionBaseTransfer";
 import { QuestionBaseMetaInfo } from "../QuestionLoader/QuestionBase";
 
 export interface QuestionBaseImportOptions {

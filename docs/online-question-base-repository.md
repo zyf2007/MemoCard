@@ -39,6 +39,18 @@
 
 `filePath` 与 `downloadUrl` 至少提供一个。
 
+### 2.2 严格校验规则（运行时）
+
+应用在解析索引时会执行以下严格校验：
+
+- 顶层必须是 JSON 对象。
+- `questionBases`（或兼容字段 `bases`）必须为数组。
+- 每个条目的 `baseName` 必须是非空字符串（会先 `trim`）。
+- `questionCount` 必须是非负整数。
+- `filePath` 与 `downloadUrl` 至少提供一个，且若提供必须是非空字符串。
+- `id` 可省略；省略时会由应用自动生成。
+- `tags` 若提供，只有非空字符串标签会被保留（会自动 `trim`）。
+
 ## 2.1 仓库地址配置规则
 
 应用支持以下仓库地址写法：
@@ -85,6 +97,25 @@
 
 - `author`: `string`（可选）。
 - `questionCount`: `number`（可选，建议与 `questions.length` 一致）。
+
+### 3.0 严格校验规则（运行时）
+
+应用在导入题库 JSON 时会执行以下严格校验：
+
+- 顶层必须是 JSON 对象。
+- `baseName` 必须是非空字符串（会先 `trim`）。
+- `questions` 必须是数组，且不能为空。
+- 每道题必须是对象，并且 `text` 必须是非空字符串。
+- 每道题不允许包含 `id` 字段（由应用内部生成）。
+- `type` 仅允许 `"choice"` 或 `"filling"`。
+- 选择题必须满足：
+  `choices` 长度必须是 4，且每个选项必须为非空字符串。
+  `correctChoiceIndex` 必须是 1-4 的整数（1-based）。
+- 填空题必须满足：
+  `correctAnswer` 必须是非空字符串。
+- `meta` 若提供必须是对象；其中：
+  `meta.author` 若提供，必须是非空字符串。
+  `meta.questionCount` 若提供，必须是非负整数。
 
 ### 3.1 选择题
 
