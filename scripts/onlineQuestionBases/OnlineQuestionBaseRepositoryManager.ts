@@ -1,80 +1,15 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { generateMD5 } from "../utils/CryptoUtils";
 import { LazySingletonBase } from "../utils/LazySingletonBase";
-
-type RawRecord = Record<string, unknown>;
-
-export interface OnlineQuestionBaseRepositoryConfig {
-  id: string;
-  name: string;
-  repoUrl: string;
-  branch: string;
-  indexPath: string;
-}
-
-export interface OnlineQuestionBaseIndexItem {
-  id: string;
-  baseName: string;
-  description?: string;
-  author?: string;
-  questionCount: number;
-  filePath?: string;
-  downloadUrl?: string;
-  tags?: string[];
-  updatedAt?: string;
-}
-
-export interface OnlineQuestionBaseIndex {
-  formatVersion: number;
-  updatedAt?: string;
-  questionBases: OnlineQuestionBaseIndexItem[];
-}
-
-interface OnlineQuestionBaseIndexCacheItem {
-  fetchedAt: number;
-  index: OnlineQuestionBaseIndex;
-}
-
-export interface OnlineQuestionBaseCatalogItem extends OnlineQuestionBaseIndexItem {
-  repoId: string;
-  repoName: string;
-}
-
-const DEFAULT_REPOSITORY: OnlineQuestionBaseRepositoryConfig = {
-  id: "default-community",
-  name: "示例在线题库仓库",
-  repoUrl: "https://github.com/zyf2007/MemoCard-QuestionBases",
-  branch: "main",
-  indexPath: "index.json",
-};
-
-function ensureRecord(value: unknown, errorMessage: string): RawRecord {
-  if (typeof value !== "object" || value === null) {
-    throw new Error(errorMessage);
-  }
-  return value as RawRecord;
-}
-
-function ensureOptionalString(value: unknown): string | undefined {
-  if (value === undefined || value === null) {
-    return undefined;
-  }
-  if (typeof value !== "string") {
-    throw new Error("字符串字段格式错误");
-  }
-  const trimmed = value.trim();
-  return trimmed === "" ? undefined : trimmed;
-}
-
-function isGithubRepoUrl(url: string) {
-  return /^https?:\/\/github\.com\/[^/]+\/[^/]+(?:\.git|\/)?$/i.test(url.trim());
-}
-
-function joinUrl(baseUrl: string, path: string) {
-  const normalizedBase = baseUrl.endsWith("/") ? baseUrl : `${baseUrl}/`;
-  const normalizedPath = path.replace(/^\/+/, "");
-  return `${normalizedBase}${normalizedPath}`;
-}
+import { isHttpOrHttpsUrl } from "../utils/url";
+import { normalizeCacheMap, normalizeRepositoryConfig, parseIndexPayload } from "./parsers";
+import {
+  OnlineQuestionBaseCatalogItem,
+  OnlineQuestionBaseIndexCacheItem,
+  OnlineQuestionBaseRepositoryConfig,
+  DEFAULT_REPOSITORY,
+} from "./types";
+import { buildIndexUrl, buildQuestionBaseFileUrl, deriveRepositoryName } from "./url";
 
 export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<OnlineQuestionBaseRepositoryManager> {
   private static readonly REPO_CONFIG_KEY = "OnlineQuestionBaseRepoConfigV1";
@@ -104,7 +39,7 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
         const parsed = JSON.parse(repoConfigJson) as unknown;
         if (Array.isArray(parsed)) {
           this.repositories = parsed
-            .map((repo) => this.normalizeRepositoryConfig(repo))
+            .map((repo) => normalizeRepositoryConfig(repo))
             .filter((repo): repo is OnlineQuestionBaseRepositoryConfig => repo !== null);
         }
       } catch (error) {
@@ -120,60 +55,11 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
     if (cacheJson) {
       try {
         const parsed = JSON.parse(cacheJson) as unknown;
-        this.indexCache = this.normalizeCacheMap(parsed);
+        this.indexCache = normalizeCacheMap(parsed);
       } catch (error) {
         console.warn("[OnlineQuestionBaseRepositoryManager] 读取索引缓存失败", error);
       }
     }
-  }
-
-  private normalizeRepositoryConfig(raw: unknown): OnlineQuestionBaseRepositoryConfig | null {
-    try {
-      const data = ensureRecord(raw, "仓库配置必须为对象");
-      const id = ensureOptionalString(data.id);
-      const name = ensureOptionalString(data.name);
-      const repoUrl = ensureOptionalString(data.repoUrl);
-      const branch = ensureOptionalString(data.branch);
-      const indexPath = ensureOptionalString(data.indexPath);
-
-      if (!id || !name || !repoUrl) {
-        return null;
-      }
-
-      return {
-        id,
-        name,
-        repoUrl,
-        branch: branch || "main",
-        indexPath: indexPath || "index.json",
-      };
-    } catch {
-      return null;
-    }
-  }
-
-  private normalizeCacheMap(raw: unknown): Record<string, OnlineQuestionBaseIndexCacheItem> {
-    if (typeof raw !== "object" || raw === null) {
-      return {};
-    }
-
-    const output: Record<string, OnlineQuestionBaseIndexCacheItem> = {};
-    for (const [repoId, cacheItem] of Object.entries(raw as RawRecord)) {
-      try {
-        const parsedCache = ensureRecord(cacheItem, "缓存项必须为对象");
-        const fetchedAt = parsedCache.fetchedAt;
-        if (typeof fetchedAt !== "number" || !Number.isFinite(fetchedAt)) {
-          continue;
-        }
-
-        const index = this.parseIndexPayload(parsedCache.index);
-        output[repoId] = { fetchedAt, index };
-      } catch {
-        continue;
-      }
-    }
-
-    return output;
   }
 
   private async persistRepositories() {
@@ -205,7 +91,7 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
     if (!repoUrl) {
       throw new Error("仓库地址不能为空");
     }
-    if (!/^https?:\/\//i.test(repoUrl)) {
+    if (!isHttpOrHttpsUrl(repoUrl)) {
       throw new Error("仓库地址必须是 http/https");
     }
 
@@ -214,7 +100,7 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
     }
 
     const id = generateMD5(`${repoUrl}-${Date.now()}`).slice(0, 12);
-    const name = params.name?.trim() || this.deriveRepositoryName(repoUrl) || `仓库-${id.slice(0, 6)}`;
+    const name = params.name?.trim() || deriveRepositoryName(repoUrl) || `仓库-${id.slice(0, 6)}`;
     const branch = params.branch?.trim() || "main";
     const indexPath = params.indexPath?.trim() || "index.json";
 
@@ -268,13 +154,13 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
           continue;
         }
 
-        const indexUrl = this.buildIndexUrl(repo);
+        const indexUrl = buildIndexUrl(repo);
         const response = await fetch(indexUrl);
         if (!response.ok) {
           throw new Error(`请求失败（${response.status}）`);
         }
         const indexJson = await response.json();
-        const index = this.parseIndexPayload(indexJson);
+        const index = parseIndexPayload(indexJson);
         nextCache[repo.id] = {
           fetchedAt: Date.now(),
           index,
@@ -308,7 +194,7 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
       throw new Error("在线题库不存在");
     }
 
-    const fileUrl = this.buildQuestionBaseFileUrl(repo, questionBase);
+    const fileUrl = buildQuestionBaseFileUrl(repo, questionBase);
     if (!fileUrl) {
       throw new Error("题库文件地址无效，请检查仓库索引");
     }
@@ -335,7 +221,7 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
       return null;
     }
 
-    return this.buildQuestionBaseFileUrl(repo, questionBase);
+    return buildQuestionBaseFileUrl(repo, questionBase);
   }
 
   private buildCatalogItems(cacheMap: Record<string, OnlineQuestionBaseIndexCacheItem>) {
@@ -355,118 +241,5 @@ export class OnlineQuestionBaseRepositoryManager extends LazySingletonBase<Onlin
     }
 
     return items;
-  }
-
-  private deriveRepositoryName(repoUrl: string) {
-    const githubRepoMatch = repoUrl.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git|\/)?$/i);
-    if (githubRepoMatch) {
-      return `${githubRepoMatch[1]}/${githubRepoMatch[2]}`;
-    }
-    try {
-      const parsed = new URL(repoUrl);
-      return parsed.host;
-    } catch {
-      return undefined;
-    }
-  }
-
-  private buildIndexUrl(repo: OnlineQuestionBaseRepositoryConfig) {
-    const repoUrl = repo.repoUrl.trim();
-    if (repoUrl.toLowerCase().endsWith(".json")) {
-      return repoUrl;
-    }
-
-    const basePrefix = this.buildFileBasePrefix(repo);
-    return joinUrl(basePrefix, repo.indexPath);
-  }
-
-  private buildQuestionBaseFileUrl(repo: OnlineQuestionBaseRepositoryConfig, item: OnlineQuestionBaseIndexItem) {
-    if (item.downloadUrl && /^https?:\/\//i.test(item.downloadUrl)) {
-      return item.downloadUrl;
-    }
-
-    if (!item.filePath) {
-      return null;
-    }
-
-    const basePrefix = this.buildFileBasePrefix(repo);
-    return joinUrl(basePrefix, item.filePath);
-  }
-
-  private buildFileBasePrefix(repo: OnlineQuestionBaseRepositoryConfig) {
-    const repoUrl = repo.repoUrl.trim();
-    if (repoUrl.toLowerCase().endsWith(".json")) {
-      const lastSlashIndex = repoUrl.lastIndexOf("/");
-      if (lastSlashIndex > "https://".length) {
-        return repoUrl.slice(0, lastSlashIndex + 1);
-      }
-      return repoUrl;
-    }
-
-    if (!isGithubRepoUrl(repoUrl)) {
-      return repoUrl.endsWith("/") ? repoUrl : `${repoUrl}/`;
-    }
-
-    const githubRepoMatch = repo.repoUrl.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git|\/)?$/i);
-    if (!githubRepoMatch) {
-      return repoUrl.endsWith("/") ? repoUrl : `${repoUrl}/`;
-    }
-
-    const owner = githubRepoMatch[1];
-    const repository = githubRepoMatch[2];
-    const branch = repo.branch.trim() || "main";
-    return `https://raw.githubusercontent.com/${owner}/${repository}/${branch}/`;
-  }
-
-  private parseIndexPayload(rawData: unknown): OnlineQuestionBaseIndex {
-    const data = ensureRecord(rawData, "索引文件必须为 JSON 对象");
-    const rawList = Array.isArray(data.questionBases) ? data.questionBases : data.bases;
-    if (!Array.isArray(rawList)) {
-      throw new Error("索引文件缺少 questionBases 数组");
-    }
-
-    const formatVersion = typeof data.formatVersion === "number" ? data.formatVersion : 1;
-    const updatedAt = ensureOptionalString(data.updatedAt);
-    const questionBases: OnlineQuestionBaseIndexItem[] = rawList.map((item, index) => {
-      const record = ensureRecord(item, `索引第${index + 1}项格式错误`);
-      const id = ensureOptionalString(record.id) || generateMD5(`${record.baseName ?? record.filePath ?? index}`).slice(0, 12);
-      const baseName = ensureOptionalString(record.baseName);
-      if (!baseName) {
-        throw new Error(`索引第${index + 1}项缺少 baseName`);
-      }
-
-      const rawCount = record.questionCount;
-      if (typeof rawCount !== "number" || !Number.isInteger(rawCount) || rawCount < 0) {
-        throw new Error(`索引第${index + 1}项 questionCount 必须为非负整数`);
-      }
-
-      const tags = Array.isArray(record.tags)
-        ? record.tags.filter((tag): tag is string => typeof tag === "string" && tag.trim() !== "").map((tag) => tag.trim())
-        : undefined;
-
-      const filePath = ensureOptionalString(record.filePath);
-      const downloadUrl = ensureOptionalString(record.downloadUrl);
-      if (!filePath && !downloadUrl) {
-        throw new Error(`索引第${index + 1}项必须至少提供 filePath 或 downloadUrl`);
-      }
-
-      return {
-        id,
-        baseName,
-        description: ensureOptionalString(record.description),
-        author: ensureOptionalString(record.author),
-        questionCount: rawCount,
-        filePath,
-        downloadUrl,
-        tags,
-        updatedAt: ensureOptionalString(record.updatedAt),
-      };
-    });
-
-    return {
-      formatVersion,
-      updatedAt,
-      questionBases,
-    };
   }
 }

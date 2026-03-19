@@ -1,6 +1,7 @@
 import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvider';
 import DismissKeyboardView from '@/components/ui/DismissKeyboardView';
 import { QuestionBaseManager } from '@/scripts/questions';
+import { isHttpOrHttpsUrl } from '@/scripts/utils/url';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
@@ -83,7 +84,7 @@ export default function ImportQuestionBase() {
             Alert.alert('导入失败', '请输入链接');
             return;
         }
-        if (!/^https?:\/\//i.test(url)) {
+        if (!isHttpOrHttpsUrl(url)) {
             Alert.alert('导入失败', '仅支持 http 或 https 链接');
             return;
         }

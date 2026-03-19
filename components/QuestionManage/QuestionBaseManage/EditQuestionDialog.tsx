@@ -153,18 +153,18 @@ export const EditQuestionDialog = ({ visible, onDismiss, onConfirm, question, ba
 
           {/* 根据题型渲染对应的编辑组件，传递状态更新方法 */}
           {questionType === 'choice' && (
-            <ChoiceQuestionEditor
-              initialQuestion={currentQuestionWithStatus.question as ChoiceQuestion | null}
-              onUpdateQuestion={(status) => setCurrentQuestionWithStatus(status)}
+            <MemoizedChoiceQuestionEditor
+              initialQuestion={(question instanceof ChoiceQuestion ? question : null)}
+              onUpdateQuestion={setCurrentQuestionWithStatus}
               baseName={baseName}
               baseId={baseId}
             />
           )}
 
           {questionType === 'filling' && (
-            <FillingQuestionEditor
-              initialQuestion={currentQuestionWithStatus.question as FillingQuestion | null}
-              onUpdateQuestion={(status) => setCurrentQuestionWithStatus(status)}
+            <MemoizedFillingQuestionEditor
+              initialQuestion={(question instanceof FillingQuestion ? question : null)}
+              onUpdateQuestion={setCurrentQuestionWithStatus}
               baseName={baseName}
               baseId={baseId}
             />
@@ -242,8 +242,8 @@ const ChoiceQuestionEditor: React.FC<ChoiceQuestionEditorProps> = ({ initialQues
     const choiceQuestion = QuestionFactory.createChoiceQuestion({
       baseId,
       baseName,
-      text: newQuestionText.trim(),
-      choices: newChoices.map(c => c.trim()),
+      text: newQuestionText,
+      choices: newChoices,
       correctChoiceIndex: Number.parseInt(newAnswer) || 0,
       id: initialQuestion?.id,
     });
@@ -289,6 +289,7 @@ const ChoiceQuestionEditor: React.FC<ChoiceQuestionEditorProps> = ({ initialQues
     </View>
   );
 };
+const MemoizedChoiceQuestionEditor = React.memo(ChoiceQuestionEditor);
 
 // 选项文本输入 + 单选按钮组件
 interface ChoiceItemProps {
@@ -361,8 +362,8 @@ const FillingQuestionEditor: React.FC<FillingQuestionEditorProps> = ({ initialQu
     const fillingQuestion = QuestionFactory.createFillingQuestion({
       baseId,
       baseName,
-      text: newQuestionText.trim(),
-      correctAnswer: newAnswer.trim(),
+      text: newQuestionText,
+      correctAnswer: newAnswer,
       id: initialQuestion?.id,
     });
 
@@ -397,3 +398,4 @@ const FillingQuestionEditor: React.FC<FillingQuestionEditorProps> = ({ initialQu
     </View>
   );
 };
+const MemoizedFillingQuestionEditor = React.memo(FillingQuestionEditor);
