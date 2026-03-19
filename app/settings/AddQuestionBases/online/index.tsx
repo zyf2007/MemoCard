@@ -1,4 +1,5 @@
 import { SearchableListPage } from '@/components/ui/SearchableListPage';
+import { OverflowMarqueeText } from '@/components/ui/OverflowMarqueeText';
 import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvider';
 import { OnlineQuestionBaseCatalogItem, OnlineQuestionBaseRepositoryManager } from '@/scripts/onlineQuestionBases';
 import { router } from 'expo-router';
@@ -169,7 +170,31 @@ export default function OnlineQuestionBaseCatalogPage() {
             return (
               <List.Item
                 title={row.item.baseName}
-                description={`${row.item.author ? `作者：${row.item.author} · ` : ''}题目数：${row.item.questionCount}${row.item.description ? `\n${row.item.description}` : ''}`}
+                description={() => {
+                  const metadataText = `${row.item.author ? `作者：${row.item.author} · ` : ''}题目数：${row.item.questionCount}`;
+                  return (
+                    <View style={{ marginTop: 2, gap: 2 }}>
+                      <View style={{ flexShrink: 1, minWidth: 0 }}>
+                        <OverflowMarqueeText
+                          text={metadataText}
+                          style={[theme.fonts.bodyMedium, { color: theme.colors.onSurfaceVariant }]}
+                          speed={36}
+                          pauseDuration={900}
+                        />
+                      </View>
+                      {row.item.description ? (
+                        <View style={{ flexShrink: 1, minWidth: 0 }}>
+                          <OverflowMarqueeText
+                            text={row.item.description}
+                            style={[theme.fonts.bodyMedium, { color: theme.colors.onSurfaceVariant }]}
+                            speed={34}
+                            pauseDuration={900}
+                          />
+                        </View>
+                      ) : null}
+                    </View>
+                  );
+                }}
                 left={(props) => <List.Icon {...props} icon="database-eye" />}
                 onPress={() =>
                   router.push({

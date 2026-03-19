@@ -15,7 +15,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
 import { Alert, FlatList, NativeScrollEvent, NativeSyntheticEvent, Platform } from 'react-native';
-import { AnimatedFAB, Appbar } from 'react-native-paper';
+import { AnimatedFAB, Appbar, Text } from 'react-native-paper';
 
 const MemoizedQuestionItem = React.memo(QuestionListItem);
 
@@ -251,6 +251,22 @@ export default function ImportQuestionBase() {
         listRef={flatListRef}
         emptyText="该题库暂无题目"
         emptySearchText="未找到匹配的题目"
+        listFooterComponent={
+          <Text
+            variant="bodyMedium"
+            style={{
+              marginTop: 12,
+              alignSelf: 'center',
+              paddingHorizontal: 10,
+              paddingVertical: 4,
+              borderRadius: 999,
+              backgroundColor: theme.colors.surfaceContainerHigh,
+              color: theme.colors.onSurfaceVariant,
+            }}
+          >
+            共{allQuestions.length}题
+          </Text>
+        }
         footerSpacerHeight={100}
         extraFlatListProps={{
           onScroll,
