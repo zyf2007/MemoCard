@@ -26,7 +26,7 @@ const ChoosingCard = forwardRef((props: Readonly<ChoosingCardProps>, ref) => {
     Reset,
   }));
 
-  useEffect(() => Reset(), [props.question]);
+  useEffect(() => Reset(), [props.question.id]);
 
   // 选项点击事件：记录选择并显示结果
   const handleOptionPress = (index: number) => {

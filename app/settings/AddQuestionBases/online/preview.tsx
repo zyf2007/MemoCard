@@ -1,14 +1,19 @@
 import { QuestionListItem } from '@/components/QuestionManage/QuestionList/QuestionListItem';
+import { SearchableListPage } from '@/components/ui/SearchableListPage';
 import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvider';
 import { QuestionFactory } from '@/scripts/QuestionFactory/questionFactory';
 import { OnlineQuestionBaseRepositoryManager } from '@/scripts/onlineQuestionBases';
-import { parseQuestionBaseTransferJson, Question, QuestionBaseManager } from '@/scripts/questions';
+import {
+  ChoiceQuestion,
+  FillingQuestion,
+  parseQuestionBaseTransferJson,
+  Question,
+  QuestionBaseManager,
+} from '@/scripts/questions';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as React from 'react';
-import { OverflowMarqueeText } from '@/components/ui/OverflowMarqueeText';
-import { Alert, FlatList, View } from 'react-native';
-import { ActivityIndicator, Appbar, Button, Text } from 'react-native-paper';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Alert, View } from 'react-native';
+import { ActivityIndicator, Appbar, Text } from 'react-native-paper';
 
 const MemoizedQuestionItem = React.memo(QuestionListItem);
 
@@ -73,6 +78,9 @@ export default function OnlineQuestionBasePreviewPage() {
       setErrorMessage(null);
     } catch (error) {
       setErrorMessage((error as Error).message);
+      setQuestions([]);
+      setQuestionCount(0);
+      setRawJson('');
     } finally {
       setLoading(false);
     }
@@ -107,63 +115,68 @@ export default function OnlineQuestionBasePreviewPage() {
 
   return (
     <Material3ThemeProvider>
-      <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-        <Appbar.Header mode="small">
-          <Appbar.BackAction onPress={() => router.back()} />
-          <Appbar.Content
-            title={(<View style={{ flexShrink: 1, minWidth: 0 }}><OverflowMarqueeText text="预览在线题库" style={[theme.fonts.titleLarge, { color: theme.colors.onSurface }]} /></View>)}
-          />
-          <Appbar.Action icon="refresh" onPress={() => void loadPreview()} />
-        </Appbar.Header>
-
-        {loading ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" />
-          </View>
-        ) : errorMessage ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 }}>
-            <Text style={{ color: theme.colors.error, textAlign: 'center' }}>{errorMessage}</Text>
-          </View>
-        ) : (
-          <>
-            <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }}>
-              <Text variant="titleMedium">{baseName}</Text>
-              <Text style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
-                {author ? `作者：${author} · ` : ''}题目数：{questionCount}
-              </Text>
-            </View>
-
-            <FlatList
-              data={questions}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => (
-                <MemoizedQuestionItem
-                  question={item}
-                  theme={theme}
-                  onEditPress={() => {}}
-                  onDeletePress={() => {}}
-                />
-              )}
-              contentContainerStyle={{ paddingBottom: 92 }}
-              ListEmptyComponent={() => (
-                <View style={{ justifyContent: 'center', alignItems: 'center', padding: 20 }}>
-                  <Text style={{ color: theme.colors.onSurfaceVariant }}>该题库暂无题目</Text>
-                </View>
-              )}
+      <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+        <SearchableListPage
+          title="预览在线题库"
+          onBackPress={() => router.back()}
+          data={questions}
+          filterItem={(question, lowerCaseQuery) => {
+            if (question.text.toLowerCase().includes(lowerCaseQuery)) {
+              return true;
+            }
+            if (question instanceof ChoiceQuestion) {
+              return question.choices.some((choice) => choice.toLowerCase().includes(lowerCaseQuery));
+            }
+            if (question instanceof FillingQuestion) {
+              return question.correctAnswer.toLowerCase().includes(lowerCaseQuery);
+            }
+            return false;
+          }}
+          searchPlaceholder="搜索题目内容..."
+          emptyText={loading ? '加载中...' : errorMessage ? '预览加载失败' : '该题库暂无题目'}
+          emptySearchText="未找到匹配的题目"
+          actions={(
+            <>
+              <Appbar.Action icon="refresh" onPress={() => void loadPreview()} disabled={loading || importing} />
+              <Appbar.Action
+                icon="download"
+                onPress={() => void importQuestionBase()}
+                disabled={loading || importing || !!errorMessage || !rawJson}
+              />
+            </>
+          )}
+          renderItem={({ item }) => (
+            <MemoizedQuestionItem
+              question={item}
+              theme={theme}
+              onEditPress={() => {}}
+              onDeletePress={() => {}}
             />
-
-            <Button
-              mode="contained"
-              style={{ marginHorizontal: 16, marginBottom: 16 }}
-              onPress={() => void importQuestionBase()}
-              loading={importing}
-              disabled={importing}
-            >
-              导入此题库
-            </Button>
-          </>
-        )}
-      </SafeAreaView>
+          )}
+          keyExtractor={(item) => item.id}
+          listHeaderComponent={
+            !loading && !errorMessage ? (
+              <View style={{ paddingHorizontal: 16, paddingTop: 8, paddingBottom: 6 }}>
+                <Text variant="titleMedium">{baseName}</Text>
+                <Text style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                  {author ? `作者：${author} · ` : ''}题目数：{questionCount}
+                </Text>
+              </View>
+            ) : null
+          }
+          listFooterComponent={
+            <View>
+              {loading ? <ActivityIndicator style={{ marginTop: 8 }} /> : null}
+              {!loading && errorMessage ? (
+                <Text style={{ marginHorizontal: 16, marginTop: 12, color: theme.colors.error, textAlign: 'center' }}>
+                  {errorMessage}
+                </Text>
+              ) : null}
+            </View>
+          }
+          footerSpacerHeight={24}
+        />
+      </View>
     </Material3ThemeProvider>
   );
 }

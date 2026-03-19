@@ -50,9 +50,12 @@ function IndividualCard({
 })
 {
   const cardRef = useRef<ChoosingCardRef>(null);
-  if (index - currentIndex === 1) {
-    cardRef.current?.Reset();
-  }
+  useEffect(() => {
+    if (index - currentIndex === 1) {
+      cardRef.current?.Reset();
+    }
+  }, [index, currentIndex, question.id]);
+
   const style = useAnimatedStyle(() => {
     const relIndex = index - currentIndexSv.value;
 
@@ -150,13 +153,13 @@ export default function PiledCard() {
       setDisplayQuestions({});
       displayQuestionCacheRef.current.clear();
     });
-  }, []);
+  }, [currentIndexSv]);
   const updateIndex = useCallback((step: number) => {
     currentIndexSv.value = currentIndexSv.value + step;
     translateX.value = 0;
     translateY.value = 0;
     setCurrentIndex((prev) => prev + step);
-  }, []);
+  }, [currentIndexSv, translateX, translateY]);
 
   const panGesture = Gesture.Pan()
     .onUpdate((e) => {
@@ -212,8 +215,9 @@ export default function PiledCard() {
     const loadVisibleQuestions = async () => {
       const currentLoadToken = ++loadTokenRef.current;
       const nextQuestions: Record<number, Question> = {};
+      const visibleQuestionIndex = [currentIndex - 1, currentIndex, currentIndex + 1];
 
-      for (const qIndex of questionIndex) {
+      for (const qIndex of visibleQuestionIndex) {
         if (qIndex < 0 || qIndex >= maxIndex) {
           continue;
         }
@@ -258,7 +262,7 @@ export default function PiledCard() {
               if (qIndex < 0 || qIndex >= maxIndex) {
                 return (
                 <View key={qIndex} style={{position: 'absolute',}}>
-                    <Button onPress={() => { void QuestionGenerator.getInstance().updateAvailableQuestionList(); setDialogId(dialogId + 1); }}>
+                    <Button onPress={() => { void QuestionGenerator.getInstance().updateAvailableQuestionList(); setDialogId((prev) => prev + 1); }}>
                       {maxIndex>0? '重做今日错题' : '今日已完成所有题！'}
                     </Button>
                 </View>);

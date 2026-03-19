@@ -7,6 +7,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { router } from 'expo-router';
 import * as React from 'react';
 import { Alert, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { ActivityIndicator, Button, Dialog, IconButton, List, Portal, Text, TextInput } from 'react-native-paper';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -111,57 +112,66 @@ export default function ImportQuestionBase() {
     return (
         <Material3ThemeProvider>
             <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-                <View style={{ marginTop: 100, marginLeft: 5, flexDirection: 'row', alignItems: 'center' }}>
-                    <IconButton
-                        icon="arrow-left"
-                        onPress={() => router.back()}
+                <ScrollView contentContainerStyle={{ paddingBottom: 24 }}>
+                    <View style={{ marginTop: 100, marginLeft: 5, flexDirection: 'row', alignItems: 'center' }}>
+                        <IconButton
+                            icon="arrow-left"
+                            onPress={() => router.back()}
+                        />
+                        <Text variant="headlineMedium">选择添加题库的方式</Text>
+                    </View>
+
+                    {/* 手动部分：替换为“使用题库创建向导” */}
+                    <Text variant="titleMedium" style={{ marginTop: 30, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>
+                        手动
+                    </Text>
+                    <List.Item
+                        title="使用题库创建向导"
+                        description="使用图形化界面创建题库"
+                        left={props => <List.Icon {...props} icon="application-import" style={{ transform: [{ scale: 0.85 }], marginLeft: 17 }} />}
+                        onPress={() => setCreateDialogVisible(true)}
                     />
-                    <Text variant="headlineMedium">选择添加题库的方式</Text>
-                </View>
 
-                {/* 手动部分：替换为“使用题库创建向导” */}
-                <Text variant="titleMedium" style={{ marginTop: 30, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>
-                    手动
-                </Text>
-                <List.Item
-                    title="使用题库创建向导"
-                    description="使用图形化界面创建题库"
-                    left={props => <List.Icon {...props} icon="application-import" style={{ transform: [{ scale: 0.85 }], marginLeft: 17 }} />}
-                    onPress={() => setCreateDialogVisible(true)}
-                />
+                    {/* 批量导入部分保持不变 */}
+                    <Text variant="titleMedium" style={{ marginTop: 16, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>
+                        批量导入
+                    </Text>
+                    <List.Item
+                        title="粘贴文本导入"
+                        description="将Json格式的题库文本导入到软件题库中"
+                        left={props => <List.Icon {...props} icon="database-edit" />}
+                        onPress={() => setPasteDialogVisible(true)}
+                    />
+                    <List.Item
+                        title="从本地 JSON 文件导入"
+                        description="从设备中选择 JSON 文件进行导入"
+                        left={props => <List.Icon {...props} icon="file-document-outline" />}
+                        onPress={() => void importByLocalFile()}
+                    />
+                    <List.Item
+                        title="从链接导入"
+                        description="通过 http/https 链接下载 JSON 并导入"
+                        left={props => <List.Icon {...props} icon="link-variant" />}
+                        onPress={() => setUrlDialogVisible(true)}
+                    />
 
-                {/* 批量导入部分保持不变 */}
-                <Text variant="titleMedium" style={{ marginTop: 16, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>
-                    批量导入
-                </Text>
-                <List.Item
-                    title="粘贴文本导入"
-                    description="将Json格式的题库文本导入到软件题库中"
-                    left={props => <List.Icon {...props} icon="database-edit" />}
-                    onPress={() => setPasteDialogVisible(true)}
-                />
-                <List.Item
-                    title="从本地 JSON 文件导入"
-                    description="从设备中选择 JSON 文件进行导入"
-                    left={props => <List.Icon {...props} icon="file-document-outline" />}
-                    onPress={() => void importByLocalFile()}
-                />
-                <List.Item
-                    title="从链接导入"
-                    description="通过 http/https 链接下载 JSON 并导入"
-                    left={props => <List.Icon {...props} icon="link-variant" />}
-                    onPress={() => setUrlDialogVisible(true)}
-                />
+                    <Text variant="titleMedium" style={{ marginTop: 16, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>
+                        在线导入
+                    </Text>
+                    <List.Item
+                        title="浏览在线题库"
+                        description="从在线仓库浏览、预览并导入题库"
+                        left={props => <List.Icon {...props} icon="cloud-search-outline" />}
+                        onPress={() => router.push('/settings/AddQuestionBases/online')}
+                    />
 
-                <Text variant="titleMedium" style={{ marginTop: 16, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>
-                    在线导入
-                </Text>
-                <List.Item
-                    title="浏览在线题库"
-                    description="从在线仓库浏览、预览并导入题库"
-                    left={props => <List.Icon {...props} icon="cloud-search-outline" />}
-                    onPress={() => router.push('/settings/AddQuestionBases/online')}
-                />
+                    {importing ? (
+                        <View style={{ marginTop: 16, alignItems: 'center', justifyContent: 'center' }}>
+                            <ActivityIndicator />
+                            <Text style={{ marginTop: 8, color: theme.colors.onSurfaceVariant }}>导入中，请稍候...</Text>
+                        </View>
+                    ) : null}
+                </ScrollView>
 
                 {/* 创建题库对话框 */}
                 <Portal>
@@ -297,13 +307,6 @@ export default function ImportQuestionBase() {
                         </Dialog.Actions>
                     </Dialog>
                 </Portal>
-
-                {importing ? (
-                    <View style={{ marginTop: 16, alignItems: 'center', justifyContent: 'center' }}>
-                        <ActivityIndicator />
-                        <Text style={{ marginTop: 8, color: theme.colors.onSurfaceVariant }}>导入中，请稍候...</Text>
-                    </View>
-                ) : null}
             </SafeAreaView>
         </Material3ThemeProvider>
     );

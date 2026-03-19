@@ -36,7 +36,7 @@ const FillingCard = forwardRef((props: Readonly<FillingCardProps>, ref) => {
         Reset,
     }));
 
-    useEffect(() => Reset(), [props.question]);
+    useEffect(() => Reset(), [props.question.id]);
     useEffect(() => {
         const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
 
