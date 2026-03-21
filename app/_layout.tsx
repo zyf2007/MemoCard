@@ -41,6 +41,7 @@ export default function RootLayout() {
           <Material3ThemeProvider>
             <Stack>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="onboarding" options={{ headerShown: false }} />
               <Stack.Screen name="settings/manageQuestionBases/index" options={{ headerShown: true, title: '管理题库' }} />
               <Stack.Screen name="settings/manageQuestionBases/manageQuestionBase/index" options={{ headerShown: false, title: '编辑题库' }} />
               <Stack.Screen name="settings/questionGenerator/index" options={{ headerShown: false, title: '出题设置' }} />

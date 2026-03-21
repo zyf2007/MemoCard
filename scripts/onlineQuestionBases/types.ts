@@ -39,7 +39,7 @@ export interface OnlineQuestionBaseCatalogItem extends OnlineQuestionBaseIndexIt
 export const DEFAULT_REPOSITORY: OnlineQuestionBaseRepositoryConfig = {
   id: "default-community",
   name: "示例在线题库仓库",
-  repoUrl: "https://github.com/zyf2007/MemoCard-QuestionBases",
+  repoUrl: "https://kirari.fun/demoOnlineBase/",
   branch: "main",
   indexPath: "index.json",
 };
