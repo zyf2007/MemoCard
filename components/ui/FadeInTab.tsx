@@ -2,10 +2,10 @@ import { useFocusEffect } from 'expo-router';
 import React, { useCallback, type PropsWithChildren } from 'react';
 import { View } from 'react-native';
 import Animated, {
-    Easing,
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming
 } from 'react-native-reanimated';
 import { Material3ThemeProvider, useAppTheme } from '../../hooks/Material3ThemeProvider';
 

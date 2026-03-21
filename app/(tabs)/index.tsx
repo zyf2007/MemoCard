@@ -1,34 +1,50 @@
-import { View } from 'react-native';
+import { useAppTheme } from '@/hooks/Material3ThemeProvider';
+import { useEffect, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
 
 import PiledCard from '@/components/piledCard/piledCard';
 import FadeInTab from '@/components/ui/FadeInTab';
-import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
-import { useState } from 'react';
-import { Button } from 'react-native-paper';
+import QuestionProgressBar from '@/components/ui/QuestionProgressBar';
+
 export default function HomeScreen() {
   const [visible, setVisible] = useState(false);
-  
-  setTimeout(() => {
-    setVisible(true);
-  }, 1000);
-  
-  // console.log(QuestionBaseManager.getInstance().getQuestionBaseByName('选择题2')?.questions)
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [total, setTotal] = useState(0);
+  const theme = useAppTheme();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setVisible(true);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <FadeInTab>
-      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-        <Button onPress={() => QuestionGenerator.getInstance().resetAllQuestions()}
-        style={{
-          margin: 30,
-        }}
-        >Reset All Questions</Button>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <QuestionProgressBar currentIndex={currentIndex} total={total} />
 
-        {visible && (
-          <PiledCard />
-        )}  
-        {/* <AsyncStorageTestComponent /> */}
-
+        <View style={styles.content}>
+          {visible && (
+            <PiledCard
+              onProgressChange={({ currentIndex: nextCurrentIndex, total: nextTotal }) => {
+                setCurrentIndex(nextCurrentIndex);
+                setTotal(nextTotal);
+              }}
+            />
+          )}
+        </View>
       </View>
     </FadeInTab>
   );
 }
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    width: '100%',
+  },
+});

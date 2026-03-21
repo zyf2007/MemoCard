@@ -15,6 +15,7 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
     private readonly STORAGE_KEY = "QUESTION_GENERATOR";
     private readonly readyPromise: Promise<void>;
     private readonly _availableQuestionIdsTmp: string[] = [];
+    private updateAvailableQuestionListToken = 0;
 
     public onQuestionCountChanged = new EventDispatcher<[number]>();
 
@@ -62,15 +63,32 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
 
     private subscribeEvents() {
         this.baseManager.onQuestionBaseListUpdated.on(() => {
-            void this.verifyQuestionBases();
-            void this.updateAvailableQuestionList();
+            void this.handleQuestionPoolChanged(true);
         });
         this.baseManager.onQuestionBaseCreated.on((baseId) => {
-            void this.enableQuestionBase(baseId);
+            void this.handleQuestionPoolChanged(false, baseId);
         });
         this.baseManager.onQuestionUpdated.on(() => {
-            void this.updateAvailableQuestionList();
+            void this.handleQuestionPoolChanged(false);
         });
+    }
+
+    private resetTodayProgressForAllQuestions() {
+        this.config.questionData.forEach((questionConfig) => {
+            questionConfig.todayFinished = false;
+        });
+    }
+
+    private async handleQuestionPoolChanged(shouldVerifyBases: boolean, autoEnableBaseId?: string) {
+        await this.ready();
+        if (autoEnableBaseId) {
+            this.config.enabledQuestionBaseIds.add(autoEnableBaseId);
+        }
+        if (shouldVerifyBases) {
+            await this.verifyQuestionBases();
+        }
+        this.resetTodayProgressForAllQuestions();
+        await this.updateAvailableQuestionList();
     }
 
     public async resetAllQuestions() {
@@ -109,16 +127,27 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
     public getConfigSnapshot() {
         return {
             randomFactor: this.config.randomFactor,
+            roundQuestionCount: this.config.roundQuestionCount,
+            hideQuestionAfterSingleCorrectPerDay: this.config.hideQuestionAfterSingleCorrectPerDay,
         };
     }
 
     public async updateGeneratorConfig(config: {
         randomFactor?: number;
+        roundQuestionCount?: number;
+        hideQuestionAfterSingleCorrectPerDay?: boolean;
     }) {
         await this.ready();
         if (typeof config.randomFactor === "number") {
             this.config.randomFactor = Math.max(0, config.randomFactor);
         }
+        if (typeof config.roundQuestionCount === "number") {
+            this.config.roundQuestionCount = this.clamp(Math.floor(config.roundQuestionCount), 1, 500);
+        }
+        if (typeof config.hideQuestionAfterSingleCorrectPerDay === "boolean") {
+            this.config.hideQuestionAfterSingleCorrectPerDay = config.hideQuestionAfterSingleCorrectPerDay;
+        }
+        await this.updateAvailableQuestionList();
         await this.persistConfig();
     }
 
@@ -168,32 +197,49 @@ export class QuestionGenerator extends LazySingletonBase<QuestionGenerator> {
     }
 
     public async updateAvailableQuestionList() {
+        const token = ++this.updateAvailableQuestionListToken;
         await this.baseManager.ready();
-        this._availableQuestionIdsTmp.length = 0;
+
         const bases = await this.baseManager.getAllQuestionBases();
         const enabledBases = bases.filter((base) => this.config.enabledQuestionBaseIds.has(base.baseId));
         const questionLists = await Promise.all(enabledBases.map((base) => base.ensureQuestionsLoaded()));
         const allQuestions = questionLists.flat();
-        const validQuestionIds = new Set(allQuestions.map((question) => question.id));
-        this.config.RemoveInvalidQuestions(validQuestionIds);
 
-        allQuestions
-            .filter((q) => !(this.config.questionData.has(q.id) && this.config.questionData.get(q.id)!.todayFinished))
-            .map((question) => question.id)
-            .forEach((questionId) => {
-                if (!this.config.questionData.has(questionId)) {
-                    this.config.questionData.set(questionId, new QuestionConfig(questionId, INITIAL_WEIGHT));
-                }
-                this.config.questionData.get(questionId)!.weight = this.clamp(
-                    this.config.questionData.get(questionId)!.weight,
-                    WEIGHT_MIN,
-                    WEIGHT_MAX
-                );
-                this._availableQuestionIdsTmp.push(questionId);
-            });
+        const validQuestionIds = new Set(allQuestions.map((question) => question.id));
+        const nextQuestionData = new Map(this.config.questionData);
+        [...nextQuestionData.keys()]
+            .filter((questionId) => !validQuestionIds.has(questionId))
+            .forEach((questionId) => nextQuestionData.delete(questionId));
+
+        const nextAvailableQuestionIds: string[] = [];
+        allQuestions.forEach((question) => {
+            const questionId = question.id;
+            const existingConfig = nextQuestionData.get(questionId);
+            if (this.config.hideQuestionAfterSingleCorrectPerDay && existingConfig?.todayFinished) {
+                return;
+            }
+
+            const nextConfig = existingConfig || new QuestionConfig(questionId, INITIAL_WEIGHT);
+            nextConfig.weight = this.clamp(nextConfig.weight, WEIGHT_MIN, WEIGHT_MAX);
+            nextQuestionData.set(questionId, nextConfig);
+            nextAvailableQuestionIds.push(questionId);
+        });
+
+        // Drop stale async runs to avoid duplicate append caused by interleaving updates.
+        if (token !== this.updateAvailableQuestionListToken) {
+            return;
+        }
+
+        this.config.questionData = nextQuestionData;
+        this._availableQuestionIdsTmp.length = 0;
+        this._availableQuestionIdsTmp.push(...nextAvailableQuestionIds);
 
         console.log("[QuestionGenerator] updateAvailableQuestionList ", this._availableQuestionIdsTmp.length, "Question(s)");
         this.shuffleQuestionsByWeight();
+        const roundQuestionCount = this.clamp(Math.floor(this.config.roundQuestionCount), 1, 500);
+        if (this._availableQuestionIdsTmp.length > roundQuestionCount) {
+            this._availableQuestionIdsTmp.length = roundQuestionCount;
+        }
         this.onQuestionCountChanged.emit(this._availableQuestionIdsTmp.length);
         await this.persistConfig();
     }

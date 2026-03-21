@@ -15,6 +15,8 @@ export class QuestionGeneratorConfig {
     public enabledQuestionBaseIds: Set<string> = new Set();
     public questionData:Map<string,QuestionConfig> = new Map();
     public randomFactor: number = 1.5;
+    public roundQuestionCount: number = 20;
+    public hideQuestionAfterSingleCorrectPerDay: boolean = true;
     FromJson(json: any) {
         console.log("[QuestionGeneratorPersisted] FromJson ", json.enabledQuestionBaseIds);
         this.enabledQuestionBaseIds = new Set(json.enabledQuestionBaseIds || []);
@@ -22,6 +24,11 @@ export class QuestionGeneratorConfig {
         console.log(this.questionData) 
         this.lastInitTime = json.lastInitTime;
         this.randomFactor = typeof json.randomFactor === "number" ? json.randomFactor : 1.5;
+        this.roundQuestionCount = typeof json.roundQuestionCount === "number" ? json.roundQuestionCount : 20;
+        this.hideQuestionAfterSingleCorrectPerDay =
+            typeof json.hideQuestionAfterSingleCorrectPerDay === "boolean"
+                ? json.hideQuestionAfterSingleCorrectPerDay
+                : true;
         console.log("[QuestionGeneratorConfig] LoadedFromJson LastInitTime", this.lastInitTime);
 
         if (new Date().toDateString() !== this.lastInitTime) {
@@ -40,6 +47,8 @@ export class QuestionGeneratorConfig {
             flatQuestionData: [...this.questionData],
             lastInitTime: this.lastInitTime,
             randomFactor: this.randomFactor,
+            roundQuestionCount: this.roundQuestionCount,
+            hideQuestionAfterSingleCorrectPerDay: this.hideQuestionAfterSingleCorrectPerDay,
         };
     }
 

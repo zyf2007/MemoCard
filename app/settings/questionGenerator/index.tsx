@@ -1,4 +1,5 @@
 import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvider';
+import { Material3Switch } from '@/components/materialSwitch';
 import PresetSlider, { PresetOption } from '@/components/ui/PresetSlider';
 import { QuestionGenerator } from '@/scripts/questionGenerator/questionGenerator';
 import { router } from 'expo-router';
@@ -40,6 +41,7 @@ const PRESETS: Preset[] = [
 ];
 
 const clampIndex = (value: number) => Math.max(0, Math.min(PRESETS.length - 1, value));
+const clampRoundQuestionCount = (value: number) => Math.max(1, Math.min(500, Math.floor(value)));
 
 export default function QuestionGeneratorSettings() {
   return (
@@ -52,6 +54,8 @@ export default function QuestionGeneratorSettings() {
 function QuestionGeneratorSettingsContent() {
   const theme = useAppTheme();
   const [presetIndex, setPresetIndex] = React.useState(2);
+  const [roundQuestionCount, setRoundQuestionCount] = React.useState(20);
+  const [hideQuestionAfterSingleCorrectPerDay, setHideQuestionAfterSingleCorrectPerDay] = React.useState(true);
 
   React.useEffect(() => {
     let mounted = true;
@@ -71,6 +75,8 @@ function QuestionGeneratorSettingsContent() {
         }
       });
       setPresetIndex(nearestIndex);
+      setRoundQuestionCount(clampRoundQuestionCount(snapshot.roundQuestionCount));
+      setHideQuestionAfterSingleCorrectPerDay(snapshot.hideQuestionAfterSingleCorrectPerDay);
     });
     return () => {
       mounted = false;
@@ -83,6 +89,20 @@ function QuestionGeneratorSettingsContent() {
     const generator = QuestionGenerator.getInstance();
     await generator.updateGeneratorConfig({ randomFactor: PRESETS[nextIndex].randomFactor });
   }, []);
+
+  const applyRoundQuestionCount = React.useCallback(async (nextCount: number) => {
+    const clampedCount = clampRoundQuestionCount(nextCount);
+    setRoundQuestionCount(clampedCount);
+    await QuestionGenerator.getInstance().updateGeneratorConfig({ roundQuestionCount: clampedCount });
+  }, []);
+
+  const toggleHideQuestionAfterSingleCorrectPerDay = React.useCallback(async () => {
+    const nextValue = !hideQuestionAfterSingleCorrectPerDay;
+    setHideQuestionAfterSingleCorrectPerDay(nextValue);
+    await QuestionGenerator.getInstance().updateGeneratorConfig({
+      hideQuestionAfterSingleCorrectPerDay: nextValue,
+    });
+  }, [hideQuestionAfterSingleCorrectPerDay]);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: theme.colors.background }}>
@@ -118,6 +138,75 @@ function QuestionGeneratorSettingsContent() {
           <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
             {PRESETS[presetIndex].description}
           </Text>
+        </View>
+
+        <Text
+          variant="titleMedium"
+          style={{ marginTop: 24, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}
+        >
+          单回合抽题数量
+        </Text>
+
+        <View
+          style={{
+            marginHorizontal: 24,
+            borderRadius: 12,
+            backgroundColor: theme.colors.surfaceVariant,
+            paddingHorizontal: 8,
+            paddingVertical: 6,
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <IconButton
+            icon="minus"
+            onPress={() => {
+              void applyRoundQuestionCount(roundQuestionCount - 1);
+            }}
+          />
+          <View style={{ alignItems: 'center' }}>
+            <Text variant="headlineSmall">{roundQuestionCount}</Text>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+              每轮最多抽取题目数
+            </Text>
+          </View>
+          <IconButton
+            icon="plus"
+            onPress={() => {
+              void applyRoundQuestionCount(roundQuestionCount + 1);
+            }}
+          />
+        </View>
+
+        <Text
+          variant="titleMedium"
+          style={{ marginTop: 24, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}
+        >
+          每题每天做对一次就不再出现
+        </Text>
+        <View
+          style={{
+            marginHorizontal: 24,
+            borderRadius: 12,
+            backgroundColor: theme.colors.surfaceVariant,
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+          }}
+        >
+          <Text variant="bodyLarge" style={{ flex: 1, color: theme.colors.onSurface }}>
+            {hideQuestionAfterSingleCorrectPerDay ? '已开启' : '已关闭'}
+          </Text>
+          <Material3Switch
+            switchOn={hideQuestionAfterSingleCorrectPerDay}
+            onPress={() => {
+              void toggleHideQuestionAfterSingleCorrectPerDay();
+            }}
+            switchOnIcon="check"
+          />
         </View>
 
         <View style={{ flex: 1 }} />

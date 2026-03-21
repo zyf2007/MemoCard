@@ -129,7 +129,11 @@ function IndividualCard({
 
 }
 
-export default function PiledCard() {
+type PiledCardProps = {
+  onProgressChange?: (progress: { currentIndex: number; total: number }) => void;
+};
+
+export default function PiledCard({ onProgressChange }: PiledCardProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   const theme = useAppTheme();
@@ -137,9 +141,14 @@ export default function PiledCard() {
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
   const [maxIndex, setMaxIndex] = useState(QuestionGenerator.getInstance().getAvailableQuestionCount());
+  const maxIndexRef = useRef(maxIndex);
   const [displayQuestions, setDisplayQuestions] = useState<Record<number, Question>>({});
   const displayQuestionCacheRef = useRef<Map<string, Question>>(new Map());
   const loadTokenRef = useRef(0);
+  useEffect(() => {
+    maxIndexRef.current = maxIndex;
+  }, [maxIndex]);
+
   useEffect(() => {
     const generator = QuestionGenerator.getInstance();
     void generator.ready().then(() => {
@@ -147,13 +156,35 @@ export default function PiledCard() {
     });
 
     return generator.onQuestionCountChanged.on((count) => {
+      const hasCountChanged = maxIndexRef.current !== count;
       setMaxIndex(count);
-      currentIndexSv.value = 0;
-      setCurrentIndex(0);
-      setDisplayQuestions({});
-      displayQuestionCacheRef.current.clear();
+      if (hasCountChanged) {
+        currentIndexSv.value = 0;
+        setCurrentIndex(0);
+        setDisplayQuestions({});
+        displayQuestionCacheRef.current.clear();
+      } else {
+        setDialogId((prev) => prev + 1);
+      }
     });
   }, [currentIndexSv]);
+
+  useEffect(() => {
+    onProgressChange?.({ currentIndex, total: maxIndex });
+  }, [currentIndex, maxIndex, onProgressChange]);
+
+  const restartRound = useCallback(async () => {
+    const generator = QuestionGenerator.getInstance();
+    await generator.updateAvailableQuestionList();
+    currentIndexSv.value = 0;
+    translateX.value = 0;
+    translateY.value = 0;
+    setCurrentIndex(0);
+    setDisplayQuestions({});
+    displayQuestionCacheRef.current.clear();
+    setDialogId((prev) => prev + 1);
+  }, [currentIndexSv, translateX, translateY]);
+
   const updateIndex = useCallback((step: number) => {
     currentIndexSv.value = currentIndexSv.value + step;
     translateX.value = 0;
@@ -262,8 +293,8 @@ export default function PiledCard() {
               if (qIndex < 0 || qIndex >= maxIndex) {
                 return (
                 <View key={qIndex} style={{position: 'absolute',}}>
-                    <Button onPress={() => { void QuestionGenerator.getInstance().updateAvailableQuestionList(); setDialogId((prev) => prev + 1); }}>
-                      {maxIndex>0? '重做今日错题' : '今日已完成所有题！'}
+                    <Button onPress={() => { void restartRound(); }}>
+                      {maxIndex>0? '重新抽题' : '今日已完成所有题！'}
                     </Button>
                 </View>);
               }
