@@ -2,7 +2,7 @@
 import FadeInTab from '@/components/ui/FadeInTab';
 import { Statistics } from '@/scripts/statistics/statistics';
 import { useFocusEffect } from '@react-navigation/native';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Dimensions,
@@ -27,8 +27,7 @@ import {
 
 const screenWidth = Dimensions.get('window').width;
 // Card has horizontal margin 16; Card.Content has horizontal padding 16.
-const cardWidth = screenWidth - 32;
-const contentWidth = screenWidth - 64;
+const contentWidth = screenWidth - 45;
 
 export default function StatisticsScreen() {
   const theme = useTheme();
@@ -112,6 +111,23 @@ export default function StatisticsScreen() {
     trendData && trendData.length > 0
       ? Math.max(...trendData.map((d: any) => d.total))
       : 0;
+
+  const trendLabels = useMemo(() => {
+    if (!trendData || trendData.length === 0) return [];
+
+    return trendData.map((d: any, index: number) => {
+      if (timeRange === 30) {
+        if (index === trendData.length - 1) {
+          return '今';
+        }
+        if (index % 5 !== 0) {
+          return '';
+        }
+      }
+
+      return d.date.slice(5);
+    });
+  }, [trendData, timeRange]);
 
   if (!achievements) return null;
 
@@ -221,7 +237,7 @@ export default function StatisticsScreen() {
             <View style={styles.chartContainer}>
               <LineChart
                 data={{
-                  labels: trendData.map((d: any) => d.date.slice(5)),
+                  labels: trendLabels,
                   datasets: [
                     {
                       data: trendData.map((d: any) => d.accuracy),
@@ -231,7 +247,7 @@ export default function StatisticsScreen() {
                   ],
                   legend: ['正确率 (%)'],
                 }}
-              width={cardWidth}
+              width={contentWidth}
                 height={220}
                 chartConfig={accuracyChartConfig}
                 bezier
@@ -315,7 +331,7 @@ export default function StatisticsScreen() {
       <View style={styles.chartContainer}>
         <LineChart
           data={{
-            labels: trendData.map((d: any) => d.date.slice(5)),
+            labels: trendLabels,
             datasets: [
               {
                 data: trendData.map((d: any) => d.total),
@@ -325,7 +341,7 @@ export default function StatisticsScreen() {
             ],
             legend: ['答题数量'],
           }}
-        width={cardWidth}
+        width={contentWidth}
           height={220}
           chartConfig={{
             ...chartConfig,
@@ -342,7 +358,8 @@ export default function StatisticsScreen() {
           formatYLabel={(v) =>
             maxTotal <= 5 ? Number(v).toFixed(1) : Number(v).toFixed(0)
           }
-          fromZero
+                    fromZero
+                    withVerticalLines={false}
         />
       </View>
     )}
@@ -498,19 +515,17 @@ export default function StatisticsScreen() {
 
 const styles = StyleSheet.create({
   chartContainer: {
-    marginHorizontal: -16,
     borderRadius: 16,
     overflow: 'hidden',
   },
   pieContainer: {
     borderRadius: 16,
     overflow: 'hidden',
-    paddingVertical: 8,
+    paddingLeft: 8,
   },
   lineChart: {
     borderRadius: 16,
-    marginLeft: -12,
-    marginRight: 12,
+    marginLeft: -screenWidth*0.08,
   },
   fullScreenLoading: {
     ...StyleSheet.absoluteFillObject,

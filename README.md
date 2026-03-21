@@ -1,50 +1,70 @@
-# Welcome to your Expo app 👋
+# MemoCard
+一款轻量高效的记忆训练应用，基于 Expo + React Native 构建。通过卡片化交互与智能出题机制，帮助你系统化巩固知识记忆，支持多场景题库管理与学习数据追踪，让记忆训练像刷卡片一样简单。
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+## ✨ 核心特性
+### 📝 沉浸式刷题训练
+- 卡片式交互体验，左右滑动轻松切换题目
+- 兼容**单选题、填空题**等多种题型
+- 作答后即时反馈，对错一目了然
+- 顶部进度条实时展示刷题进度，掌控学习节奏
 
-## Get started
+### 📚 灵活的题库管理
+- 支持多种创建/导入方式：
+  - 手动新建专属题库
+  - 粘贴 JSON 文本快速导入（适合 AI 生成题库文件）
+  - 本地 JSON 文件批量导入
+  - 通过 URL 一键拉取远程题库
+- 完整的题库生命周期管理：查看、编辑、删除一站式操作
 
-1. Install dependencies
+### 🌐 在线题库生态
+- 浏览精选在线题库列表，发现优质学习资源
+- 预览题库内容，精准选择适配的学习材料
+- 一键导入在线题库，无需手动录入
+- 自定义管理在线题库仓库源，拓展学习资源
 
-   ```bash
-   npm install
-   ```
+### ⚙️ 个性化出题设置
+- 自定义每日/每轮出题规则，适配不同学习节奏
+- 灵活选择启用的题库，精准聚焦当前学习目标
 
-2. Start the app
+### 📊 可视化学习统计
+- 核心数据概览：总答题数、正确率、活跃天数等
+- 趋势分析：7天/30天学习数据图表，直观掌握学习状态
+- 题库维度分析：各题库答题分布与能力提升情况
 
-   ```bash
-   npx expo start
-   ```
+### 🔄 便捷的数据迁移
+- 数据导出：支持导出至文件或剪贴板，轻松备份
+- 数据导入：从文件/剪贴板/文本粘贴导入，覆盖式同步
+- 跨设备同步：完美适配换机、备份、多设备使用场景
 
-In the output, you'll find options to open the app in a
+### 🎯 友好的首次使用引导
+- 新用户：快速创建首个题库，即刻开启记忆训练
+- 老用户：一键导入历史数据，无缝衔接学习进度
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## 📱 应用结构
+- **记忆**：核心训练页面，卡片式刷题交互
+- **统计**：学习数据可视化，趋势分析与复盘
+- **管理**：题库管理、出题设置、导入导出、在线题库一站式操作
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 🚀 快速开始
+### 环境准备
+确保已安装 Node.js 及 npm/yarn，且配置好 Expo 开发环境。
 
-## Get a fresh project
-
-When you're ready, run:
-
+### 安装与运行
 ```bash
-npm run reset-project
+# 安装依赖
+npm install
+
+# 启动开发服务器
+npm run start
+
+# 运行到 Android 设备/模拟器
+npx expo run:android
 ```
+> （目前只在 Android 平台测试）
+## 📖 配置与文档
+- 在线题库仓库配置规范与索引格式（可以做给 AI 的提示词）：[docs/online-question-base-repository.md](docs/online-question-base-repository.md)
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### 总结
+1. MemoCard 以卡片化交互为核心，提供从题库管理、个性化刷题到数据统计的全流程记忆训练能力；
+2. 支持多渠道题库导入/导出，适配跨设备使用场景，降低学习数据管理成本；
+3. 轻量化开发与部署，基于 Expo + React Native 实现跨平台兼容，快速启动即可使用。
