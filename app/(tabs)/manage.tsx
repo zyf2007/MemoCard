@@ -10,8 +10,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function TabViewExample() {
   const theme = useAppTheme();
 
-
-
   return (
     <FadeInTab>
       <SafeAreaView>
@@ -37,6 +35,12 @@ export default function TabViewExample() {
             description="管理出题规则等"
             left={props => <List.Icon {...props} icon="file-question" />}
             onPress={() => router.push("/settings/questionGenerator")}
+          />
+          <List.Item
+            title="导入/导出信息"
+            description="迁移当前题库、统计、在线仓库和出题设置"
+            left={props => <List.Icon {...props} icon="database-sync" />}
+            onPress={() => router.push("/settings/dataTransfer")}
           />
           <List.Item
             title="关于应用"

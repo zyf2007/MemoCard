@@ -13,6 +13,17 @@ interface DailyStatistics {
   };
 }
 
+type ArchivedStatistics = {
+  byBase: { [frombase: string]: DailyBaseStats };
+  activeDays: number;
+};
+
+type StatisticsStorageV2 = {
+  formatVersion: 2;
+  recentDaily: DailyStatistics;
+  archived: ArchivedStatistics;
+};
+
 type ImprovedBaseStats = {
   frombase: string;
   oldAccuracy: number;
@@ -48,9 +59,14 @@ type DashboardData = {
 };
 
 const STORAGE_KEY = "question_statistics";
+const RECENT_DAYS_TO_KEEP = 30;
 
 export class Statistics extends LazySingletonBase<Statistics> {
-  private cachedStats: DailyStatistics = {};
+  private cachedRecentStats: DailyStatistics = {};
+  private archivedStats: ArchivedStatistics = {
+    byBase: {},
+    activeDays: 0,
+  };
   private hasLoaded = false;
   private loadPromise: Promise<void> | null = null;
 
@@ -71,10 +87,19 @@ export class Statistics extends LazySingletonBase<Statistics> {
     this.loadPromise = (async () => {
       try {
         const storedData = await AsyncStorage.getItem(STORAGE_KEY);
-        this.cachedStats = storedData ? JSON.parse(storedData) : {};
+        const parsed = storedData ? JSON.parse(storedData) : null;
+        const migrated = this.normalizeAndMigrateStorage(parsed);
+        this.cachedRecentStats = migrated.recentDaily;
+        this.archivedStats = migrated.archived;
+        await this.pruneAndArchiveOldStats();
+        await this.saveToStorage();
       } catch (error) {
         console.error("[Statistics] 加载统计数据失败:", error);
-        this.cachedStats = {};
+        this.cachedRecentStats = {};
+        this.archivedStats = {
+          byBase: {},
+          activeDays: 0,
+        };
       } finally {
         this.hasLoaded = true;
         this.loadPromise = null;
@@ -86,7 +111,12 @@ export class Statistics extends LazySingletonBase<Statistics> {
 
   private async saveToStorage() {
     try {
-      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(this.cachedStats));
+      const payload: StatisticsStorageV2 = {
+        formatVersion: 2,
+        recentDaily: this.cachedRecentStats,
+        archived: this.archivedStats,
+      };
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
     } catch (error) {
       console.error("[Statistics] 保存统计数据失败:", error);
     }
@@ -104,7 +134,7 @@ export class Statistics extends LazySingletonBase<Statistics> {
       const date = new Date(today);
       date.setDate(date.getDate() - i);
       const dateStr = date.toISOString().split("T")[0];
-      const dayData = this.cachedStats[dateStr] || {};
+      const dayData = this.cachedRecentStats[dateStr] || {};
 
       let total = 0;
       let correct = 0;
@@ -127,7 +157,10 @@ export class Statistics extends LazySingletonBase<Statistics> {
 
   private buildTotalStatsByBase(): { [frombase: string]: DailyBaseStats } {
     const totalStats: { [frombase: string]: DailyBaseStats } = {};
-    Object.values(this.cachedStats).forEach((dailyStats) => {
+    Object.entries(this.archivedStats.byBase).forEach(([frombase, stats]) => {
+      totalStats[frombase] = { total: stats.total, correct: stats.correct };
+    });
+    Object.values(this.cachedRecentStats).forEach((dailyStats) => {
       Object.entries(dailyStats).forEach(([frombase, stats]) => {
         if (!totalStats[frombase]) {
           totalStats[frombase] = { total: 0, correct: 0 };
@@ -205,9 +238,10 @@ export class Statistics extends LazySingletonBase<Statistics> {
       }
     });
 
-    const activeDays = Object.keys(this.cachedStats).filter((date) =>
-      Object.values(this.cachedStats[date]).some((s) => s.total > 0)
+    const recentActiveDays = Object.keys(this.cachedRecentStats).filter((date) =>
+      Object.values(this.cachedRecentStats[date]).some((s) => s.total > 0)
     ).length;
+    const activeDays = this.archivedStats.activeDays + recentActiveDays;
 
     return {
       totalQuestions,
@@ -224,18 +258,19 @@ export class Statistics extends LazySingletonBase<Statistics> {
     const date = this.getCurrentDate();
     const frombase = question.frombase || "unknown";
 
-    if (!this.cachedStats[date]) {
-      this.cachedStats[date] = {};
+    if (!this.cachedRecentStats[date]) {
+      this.cachedRecentStats[date] = {};
     }
-    if (!this.cachedStats[date][frombase]) {
-      this.cachedStats[date][frombase] = { total: 0, correct: 0 };
+    if (!this.cachedRecentStats[date][frombase]) {
+      this.cachedRecentStats[date][frombase] = { total: 0, correct: 0 };
     }
 
-    this.cachedStats[date][frombase].total += 1;
+    this.cachedRecentStats[date][frombase].total += 1;
     if (isCorrect) {
-      this.cachedStats[date][frombase].correct += 1;
+      this.cachedRecentStats[date][frombase].correct += 1;
     }
 
+    await this.pruneAndArchiveOldStats();
     await this.saveToStorage();
   }
 
@@ -258,7 +293,8 @@ export class Statistics extends LazySingletonBase<Statistics> {
   public async getAllQuestionBases(): Promise<string[]> {
     await this.ensureLoaded();
     const bases = new Set<string>();
-    Object.values(this.cachedStats).forEach((dailyStats) => {
+    Object.keys(this.archivedStats.byBase).forEach((base) => bases.add(base));
+    Object.values(this.cachedRecentStats).forEach((dailyStats) => {
       Object.keys(dailyStats).forEach((base) => bases.add(base));
     });
     return Array.from(bases).sort();
@@ -286,5 +322,158 @@ export class Statistics extends LazySingletonBase<Statistics> {
       distribution,
       bases,
     };
+  }
+
+  private normalizeAndMigrateStorage(raw: unknown): StatisticsStorageV2 {
+    const fallback: StatisticsStorageV2 = {
+      formatVersion: 2,
+      recentDaily: {},
+      archived: {
+        byBase: {},
+        activeDays: 0,
+      },
+    };
+
+    if (!raw || typeof raw !== "object") {
+      return fallback;
+    }
+
+    const maybeV2 = raw as Partial<StatisticsStorageV2>;
+    if (maybeV2.formatVersion === 2) {
+      return {
+        formatVersion: 2,
+        recentDaily: this.normalizeDailyStatistics(maybeV2.recentDaily),
+        archived: this.normalizeArchivedStatistics(maybeV2.archived),
+      };
+    }
+
+    const legacyDailyStats = this.normalizeDailyStatistics(raw);
+    return this.migrateLegacyStats(legacyDailyStats);
+  }
+
+  private normalizeArchivedStatistics(raw: unknown): ArchivedStatistics {
+    if (!raw || typeof raw !== "object") {
+      return { byBase: {}, activeDays: 0 };
+    }
+
+    const parsed = raw as Partial<ArchivedStatistics>;
+    return {
+      byBase: this.normalizeDailyBaseStatsMap(parsed.byBase),
+      activeDays: Number.isFinite(parsed.activeDays) ? Math.max(0, Math.floor(parsed.activeDays || 0)) : 0,
+    };
+  }
+
+  private normalizeDailyStatistics(raw: unknown): DailyStatistics {
+    if (!raw || typeof raw !== "object") {
+      return {};
+    }
+
+    const result: DailyStatistics = {};
+    Object.entries(raw as Record<string, unknown>).forEach(([date, dayValue]) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return;
+      }
+      if (!dayValue || typeof dayValue !== "object") {
+        return;
+      }
+
+      const byBase = this.normalizeDailyBaseStatsMap(dayValue);
+      if (Object.keys(byBase).length > 0) {
+        result[date] = byBase;
+      }
+    });
+
+    return result;
+  }
+
+  private normalizeDailyBaseStatsMap(raw: unknown): { [frombase: string]: DailyBaseStats } {
+    if (!raw || typeof raw !== "object") {
+      return {};
+    }
+
+    const result: { [frombase: string]: DailyBaseStats } = {};
+    Object.entries(raw as Record<string, unknown>).forEach(([frombase, stats]) => {
+      if (!frombase || typeof frombase !== "string") {
+        return;
+      }
+      if (!stats || typeof stats !== "object") {
+        return;
+      }
+
+      const typedStats = stats as Partial<DailyBaseStats>;
+      const total = Number.isFinite(typedStats.total) ? Math.max(0, Math.floor(typedStats.total || 0)) : 0;
+      const correctRaw = Number.isFinite(typedStats.correct) ? Math.max(0, Math.floor(typedStats.correct || 0)) : 0;
+      const correct = Math.min(correctRaw, total);
+      if (total <= 0) {
+        return;
+      }
+
+      result[frombase] = { total, correct };
+    });
+    return result;
+  }
+
+  private migrateLegacyStats(legacyStats: DailyStatistics): StatisticsStorageV2 {
+    const cutoff = this.getRecentCutoffDate();
+    const recentDaily: DailyStatistics = {};
+    const archived: ArchivedStatistics = { byBase: {}, activeDays: 0 };
+
+    Object.entries(legacyStats).forEach(([date, byBase]) => {
+      if (date >= cutoff) {
+        recentDaily[date] = byBase;
+        return;
+      }
+
+      let dayActive = false;
+      Object.entries(byBase).forEach(([frombase, stats]) => {
+        if (!archived.byBase[frombase]) {
+          archived.byBase[frombase] = { total: 0, correct: 0 };
+        }
+        archived.byBase[frombase].total += stats.total;
+        archived.byBase[frombase].correct += stats.correct;
+        if (stats.total > 0) {
+          dayActive = true;
+        }
+      });
+      if (dayActive) {
+        archived.activeDays += 1;
+      }
+    });
+
+    return {
+      formatVersion: 2,
+      recentDaily,
+      archived,
+    };
+  }
+
+  private getRecentCutoffDate(): string {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - (RECENT_DAYS_TO_KEEP - 1));
+    return cutoffDate.toISOString().split("T")[0];
+  }
+
+  private async pruneAndArchiveOldStats() {
+    const cutoff = this.getRecentCutoffDate();
+    const datesToArchive = Object.keys(this.cachedRecentStats).filter((date) => date < cutoff);
+
+    datesToArchive.forEach((date) => {
+      const dayStats = this.cachedRecentStats[date];
+      let dayActive = false;
+      Object.entries(dayStats).forEach(([frombase, stats]) => {
+        if (!this.archivedStats.byBase[frombase]) {
+          this.archivedStats.byBase[frombase] = { total: 0, correct: 0 };
+        }
+        this.archivedStats.byBase[frombase].total += stats.total;
+        this.archivedStats.byBase[frombase].correct += stats.correct;
+        if (stats.total > 0) {
+          dayActive = true;
+        }
+      });
+      if (dayActive) {
+        this.archivedStats.activeDays += 1;
+      }
+      delete this.cachedRecentStats[date];
+    });
   }
 }
