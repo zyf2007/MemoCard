@@ -1,5 +1,5 @@
-import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvider';
 import DismissKeyboardView from '@/components/ui/DismissKeyboardView';
+import { Material3ThemeProvider, useAppTheme } from '@/hooks/Material3ThemeProvider';
 import { QuestionBaseManager } from '@/scripts/questions';
 import { isHttpOrHttpsUrl } from '@/scripts/utils/url';
 import * as DocumentPicker from 'expo-document-picker';
@@ -121,13 +121,12 @@ export default function ImportQuestionBase() {
                         <Text variant="headlineMedium">选择添加题库的方式</Text>
                     </View>
 
-                    {/* 手动部分：替换为“使用题库创建向导” */}
                     <Text variant="titleMedium" style={{ marginTop: 30, marginLeft: 16, marginBottom: 12, color: theme.colors.primary }}>
                         手动
                     </Text>
                     <List.Item
-                        title="使用题库创建向导"
-                        description="使用图形化界面创建题库"
+                        title="创建新题库"
+                        description="创建空白题库并进入题库编辑页面"
                         left={props => <List.Icon {...props} icon="application-import" style={{ transform: [{ scale: 0.85 }], marginLeft: 17 }} />}
                         onPress={() => setCreateDialogVisible(true)}
                     />

@@ -525,7 +525,7 @@ const styles = StyleSheet.create({
   },
   lineChart: {
     borderRadius: 16,
-    marginLeft: -screenWidth*0.08,
+    marginLeft: -screenWidth*0.086,
   },
   fullScreenLoading: {
     ...StyleSheet.absoluteFillObject,
