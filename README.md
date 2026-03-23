@@ -1,7 +1,7 @@
 # MemoCard
 一款轻量高效的记忆卡片手机 App。支持在线浏览并导入题库，通过卡片化交互与智能出题机制，帮助你快速记忆知识，并通过统计图表看到学习数据。
 
-![MemoCard](./assets/images/memocard_readme.avif)
+![MemoCard](https://raw.githubusercontent.com/zyf2007/MemoCard/refs/heads/main/assets/images/memocard_readme.avif)
 
 ## ✨ 核心特性
 ### 📝 沉浸式刷题训练
@@ -63,9 +63,5 @@ npx expo run:android
 ```
 > （目前只在 Android 平台测试）
 ## 📖 配置与文档
-- 在线题库仓库配置规范与索引格式（可以做给 AI 的提示词）：[docs/online-question-base-repository.md](docs/online-question-base-repository.md)
+- 在线题库仓库配置规范与索引格式（可以做给 AI 的提示词）：[docs/online-question-base-repository.md](https://github.com/zyf2007/MemoCard/blob/main/docs/online-question-base-repository.md)
 
-### 总结
-1. MemoCard 以卡片化交互为核心，提供从题库管理、个性化刷题到数据统计的全流程记忆训练能力；
-2. 支持多渠道题库导入/导出，适配跨设备使用场景，降低学习数据管理成本；
-3. 轻量化开发与部署，基于 Expo + React Native 实现跨平台兼容，快速启动即可使用。
